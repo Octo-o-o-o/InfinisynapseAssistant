@@ -3,6 +3,14 @@
 本项目变更记录，遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 版本对应规则包成熟度，不对应 InfiniSynapse 官方版本。
 
+## [0.3.4] - 2026-06-23
+
+### Added
+- `docs/playbooks/task-sharing.md`：任务分享 / 公开只读结果页。重点是安全：`setShare`/`shareStatus` 需所有者鉴权，但 `publicTask`/`publicMessagePayload`/`publicTaskFileTree`/`publicPreviewFile`/`publicDownloadTaskFile`/`publicDownloadZip` **无鉴权**——公开=任何拿到 taskId 的人都能读全部数据。含决策、流程、撤销、反模式、清单；端点经上游核对。
+
+### Changed
+- 接入 `docs/README.md` 导航、`AGENTS.md §9`、`llms.txt`、`tools/doctor.sh`。
+
 ## [0.3.3] - 2026-06-23
 
 安全接入图示化；补市场订阅与 Browser Use 两份 playbook。
