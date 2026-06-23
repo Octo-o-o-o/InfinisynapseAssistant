@@ -33,6 +33,8 @@ if [ -f "$SCANNER" ]; then
   assert_contains_rule "tools/hooks/test-fixtures/bad-newtask-no-sse.ts" "INF-SSE-001"
   assert_exit "tools/hooks/test-fixtures/bad-download-as-json.ts" 1
   assert_contains_rule "tools/hooks/test-fixtures/bad-download-as-json.ts" "INF-DL-001"
+  assert_exit "tools/hooks/test-fixtures/bad-wrong-success-code.ts" 1
+  assert_contains_rule "tools/hooks/test-fixtures/bad-wrong-success-code.ts" "INF-API-001"
   assert_exit "tools/hooks/test-fixtures/good-server-proxy.ts" 0
   assert_exit "tools/hooks/test-fixtures/good-deploy.env" 0
   assert_exit "tools/hooks/test-fixtures/good-doc-tokens.ts" 0

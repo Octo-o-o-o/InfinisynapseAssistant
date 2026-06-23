@@ -18,6 +18,7 @@
 | 接入共享数据源 / 知识库（市场订阅） | `docs/playbooks/market-subscriptions.md` | `docs/reference/api-index.md` 中市场端点 |
 | 让 AI 操作浏览器（购物比价 / 网页） | `docs/playbooks/browser-use.md` | `infinisynapse-browser-extension` skill |
 | 分享 / 公开只读结果页 | `docs/playbooks/task-sharing.md` | `docs/reference/api-index.md` 任务分享端点 |
+| 计划/执行模式 + 高风险动作审批 | `docs/playbooks/plan-act-approval.md` | `docs/reference/api-index.md` 的 togglePlanActMode/autoApprovalSettings |
 | 排查报错 / 部署登录失败 | `docs/playbooks/troubleshooting.md` | `infinisynapse-deployment` skill |
 | 私有化部署 | `docs/QUICK-REFERENCE.md` | `infinisynapse-deployment` skill, `upstream-docs/.../private-deployment-guide.md` |
 | 速查易混术语 | `docs/reference/glossary.md` | 词条指向的 `reference/` 与 `playbooks/` |

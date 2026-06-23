@@ -200,6 +200,15 @@ case "$base" in
         add_finding "INF-DL-001" "MEDIUM" "$flagged" "下载端点返回二进制流，不要按 JSON 解析（见 api-index.md 二进制清单）"
       fi
     fi
+
+    # INF-API-001：InfiniSynapse 统一信封成功码是 200 不是 0。
+    # 在 InfiniSynapse 集成文件里把 code 和 0 比较（code===0 / code!==0）多半是写错了成功码。
+    if code_has 'app\.infinisynapse|/api/ai|InfiniSynapse|ApiEnvelope'; then
+      if code_has 'code[[:space:]]*[!=]==?[[:space:]]*0([^0-9]|$)'; then
+        ln="$(first_line 'code[[:space:]]*[!=]==?[[:space:]]*0([^0-9]|$)')"
+        add_finding "INF-API-001" "MEDIUM" "$ln" "InfiniSynapse 统一信封成功码是 200 不是 0；应判 code===200（见 api-index 统一信封）"
+      fi
+    fi
     ;;
 esac
 
