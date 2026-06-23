@@ -111,3 +111,44 @@ test("reconnect.enabled=false 时流断开即判错", async () => {
   assert.equal(res.status, "error");
   assert.equal(res.reconnects, 0);
 });
+
+test("message.update 事件也被处理（文本累积 + 完成判定）", async () => {
+  const fake = {
+    async openEvents() {
+      return streamFrom([
+        'event: message.update\ndata: {"taskId":"t","message":{"ts":1,"text":"经更新"}}\n\n',
+        'event: message.update\ndata: {"taskId":"t","message":{"ts":2,"say":"completion_result"}}\n\n',
+      ]);
+    },
+    async newTask() { return { success: true }; },
+    async getUiMessageById() { return { messages: [] }; },
+    async getTaskWorkspace() { return { cwd: "/w", files: [] }; },
+  };
+  const res = await runTask(fake as never, { text: "hi", reconnect: { enabled: false } });
+  assert.equal(res.status, "completed");
+  assert.equal(res.finalText, "经更新");
+});
+
+test("upload_file_to_sandbox：上传与 askResponse 在 runTask 返回前已完成（不泄漏）", async () => {
+  const calls: string[] = [];
+  const fake = {
+    async openEvents() {
+      return streamFrom([
+        'event: message.add\ndata: {"taskId":"t","message":{"ts":1,"type":"ask","ask":"upload_file_to_sandbox"}}\n\n',
+        'event: message.add\ndata: {"taskId":"t","message":{"ts":2,"say":"completion_result"}}\n\n',
+      ]);
+    },
+    async newTask() { return { success: true }; },
+    async uploadToSandbox() { calls.push("upload"); return { filename: "f" }; },
+    async askResponse() { calls.push("ask"); return { success: true }; },
+    async getUiMessageById() { return { messages: [] }; },
+    async getTaskWorkspace() { return { cwd: "/w", files: [] }; },
+  };
+  const res = await runTask(fake as never, {
+    text: "hi",
+    reconnect: { enabled: false },
+    onUploadRequest: () => ({ data: new Uint8Array([1]), filename: "a.txt" }),
+  });
+  assert.equal(res.status, "completed");
+  assert.deepEqual(calls, ["upload", "ask"]); // 返回前已 await 完
+});

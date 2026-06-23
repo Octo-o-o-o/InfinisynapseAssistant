@@ -256,8 +256,11 @@ class InfiniSynapseClient:
             self._url(f"/api/tools/storage/downloadTaskFile/{urllib.parse.quote(task_id)}", query),
             headers=self._headers(), method="GET",
         )
-        with urllib.request.urlopen(req, timeout=self.timeout) as resp:
-            return resp.read()
+        try:
+            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+                return resp.read()
+        except urllib.error.HTTPError as e:
+            raise InfiniSynapseError(f"download failed HTTP {e.code}", http_status=e.code)
 
     # ---- 上传（区分两类）----
     def _multipart(self, path: str, query: dict | None, filename: str, data: bytes,
@@ -278,7 +281,10 @@ class InfiniSynapseClient:
                 status = resp.status
         except urllib.error.HTTPError as e:
             raw, status = e.read().decode(errors="replace"), e.code
-        parsed = json.loads(raw) if raw else {}
+        try:
+            parsed = json.loads(raw) if raw else {}
+        except json.JSONDecodeError:
+            raise InfiniSynapseError(f"Non-JSON upload response (HTTP {status})", http_status=status, body=raw[:500])
         if status >= 400:
             msg = parsed.get("message") if isinstance(parsed, dict) else None
             raise InfiniSynapseError(msg or f"upload failed HTTP {status}", http_status=status, body=parsed)
@@ -405,7 +411,7 @@ def run_task(client: InfiniSynapseClient, text: str, *, task_id: str | None = No
                             result.error = data.get("message") or data.get("title")
                             state["done"] = True
                             break
-                        if name in ("message.add", "message.partial") and isinstance(data, dict):
+                        if name in ("message.add", "message.partial", "message.update") and isinstance(data, dict):
                             handle_message(data.get("message") or {})
                             if state["done"]:
                                 break
@@ -463,5 +469,9 @@ def _handle_upload(client, task_id, conn_id, msg, on_upload_request):
             client.ask_response(task_id, conn_id=conn_id, text=json.dumps(uploaded))
         else:
             client.ask_response(task_id, conn_id=conn_id, text="{}")
-    except InfiniSynapseError:
-        client.ask_response(task_id, conn_id=conn_id, text="{}")
+    except Exception:
+        # 上传/回调失败不终止任务：回 {} 让 Agent 不卡住（与 TS 端一致）
+        try:
+            client.ask_response(task_id, conn_id=conn_id, text="{}")
+        except Exception:
+            pass

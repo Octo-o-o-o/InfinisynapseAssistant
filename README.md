@@ -28,7 +28,7 @@ InfiniSynapse 目前在公开训练语料里覆盖较少，AI 助手很容易在
 - **有强约束规则**：把“API Key 必须在服务端”“先连 SSE 再发任务”“结果要读 workspace”“`AUTHING_SERVER_URL` 不能写错”等高风险点从文档描述提升为默认开发约束。
 - **有产品编排模式**：不仅保存 endpoint，还整理了高考助手、购物比价、报告快写等应用级调用流程，方便从“单接口调用”推进到“可落地产品设计”。
 - **有可跑的参考 SDK**：`samples/sdk/` 提供零依赖的 TypeScript / Python 客户端（SSE 解析、`runTask` 长任务编排、后端代理、二进制下载、两类上传），并带离线单测，AI 可以直接复制而不必现写易错的 SSE/代理。
-- **有实时护栏**：`tools/hooks/` 的扫描器在每次 Edit/Write 后自动检查「API Key 进前端、SSE 顺序、二进制当 JSON、`AUTHING_SERVER_URL` 写错」等高风险点，命中高危会当场反馈（规则 `INF-SEC/SSE/DL/ENV`）。
+- **有实时护栏**：`tools/hooks/` 的扫描器在每次 Edit/Write 后自动检查「API Key 进前端、SSE 顺序、二进制当 JSON、`AUTHING_SERVER_URL` 写错」等风险点；命中高危（`INF-SEC-*`/`INF-ENV-001/002`）会阻塞要求当场修，`INF-SSE-001`/`INF-DL-001` 等为提醒。
 - **有跨工具 fan-out**：同一套规则同步给 Codex、Claude Code、Cursor、Copilot 和通用 LLM/RAG 使用；`.claude/skills/` 由 `.agents/skills/` 单向镜像，`tools/sync-skills.sh --check` 防漂移。
 - **有真回归测试**：`tools/test-suite.sh` 断言扫描器 fixtures 退出码、跑 SDK 离线单测、校验 skill 镜像一致和 api-index 与上游端点对齐，改规则会被测出退化。
 - **有同步机制**：`tools/sync-upstream-docs.sh` 可以重新抓取 zh/en 两套官方文档和截图，方便后续跟进官网更新。
@@ -60,22 +60,24 @@ InfiniSynapse 目前在公开训练语料里覆盖较少，AI 助手很容易在
 ├── AGENTS.md                         # 跨工具通用规范入口（单一真源）
 ├── CLAUDE.md                         # Claude Code 入口 + 硬约束速览
 ├── llms.txt                          # 给任意 LLM 的项目导航
+├── CHANGELOG.md  CONTRIBUTING.md      # 变更记录 / 贡献指南
 ├── docs/
 │   ├── README.md                     # 文档导航：人类入口、目录分层和维护边界
 │   ├── CONTENT-MODEL.md              # AI/人类友好 × 官方/特定用法的内容维护模型
-│   ├── reference/                    # api-index.md（端点总目录）+ task-lifecycle.md（SSE 时序）
-│   ├── playbooks/                    # RAG/文件放置等核心场景的特定用法
-│   └── ...                           # 使用说明、审计、计划、速查、许可说明
+│   ├── reference/                    # 事实基准：api-index / capabilities / task-lifecycle / glossary
+│   ├── playbooks/                    # 特定用法：安全接入 / RAG / 市场订阅 / Browser Use / 任务分享 / 排查（+ assets/ 图）
+│   ├── proposals/                    # 产品方案草案（外围，不进规则主线）
+│   └── ...                           # 使用说明、架构、审计、计划、速查、许可说明
 ├── samples/
-│   ├── sdk/typescript/               # 零依赖 TS client + SSE 解析 + runTask + 代理 + 离线单测
-│   ├── sdk/python/                   # 标准库 Python client + 离线单测
+│   ├── sdk/typescript/               # 零依赖 TS client + SSE 解析 + 重连 runTask + 代理 + 离线单测
+│   ├── sdk/python/                   # 标准库 Python client + 重连 + 离线单测
 │   └── templates/                    # curl 速查、后端 Agent Flow 骨架
 ├── tools/
 │   ├── hooks/                        # PostToolUse 扫描器 + fixtures + 复用示例
 │   ├── sync-skills.sh                # .agents/skills → .claude/skills 镜像
 │   ├── doctor.sh / test-suite.sh / sync-upstream-docs.sh
-├── .agents/skills/                   # skills 唯一源（Codex）
-├── .claude/skills/                   # skills 镜像（Claude Code）+ settings.json 接线钩子
+├── .agents/skills/                   # skills 唯一源（Codex）+ manifest.json
+├── .claude/                          # settings.json 接线 PostToolUse 钩子 + skills/ 镜像
 ├── .cursor/rules/  .github/          # Cursor / Copilot fan-out
 ├── upstream-docs/infinisynapse-site/ # 官方文档本地镜像
 └── upstream-src/                     # 预留上游源码 / 离线包位置
@@ -125,7 +127,7 @@ bash tools/sync-upstream-docs.sh
 当前验证状态：
 
 ```text
-npm test: PASS（37 项，0 失败）
+npm test: PASS（44 项，0 失败）
 bash tools/doctor.sh: PASS，仅 upstream-src/infini_docker 缺失为预期 WARN
 ```
 

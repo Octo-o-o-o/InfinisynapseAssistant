@@ -83,6 +83,7 @@ export async function runTask(client: InfiniSynapseClient, opts: RunTaskOptions)
   const acc = new TextAccumulator();
   const handledAsks = new Set<number>();
   const seenTs = new Set<number>();
+  const pendingUploads: Promise<void>[] = []; // 在途上传，结束前 await 完
   let status: RunTaskResult["status"] = "completed";
   let errorMsg: string | undefined;
   let done = false;
@@ -93,16 +94,16 @@ export async function runTask(client: InfiniSynapseClient, opts: RunTaskOptions)
   async function handleUpload(m: AgentMessage): Promise<void> {
     try {
       const file = opts.onUploadRequest ? await opts.onUploadRequest(m) : null;
-      if (file) {
-        const uploaded = await client.uploadToSandbox(taskId, file);
-        await client.askResponse({ taskId, connId, text: JSON.stringify(uploaded) });
-      } else {
-        await client.askResponse({ taskId, connId, text: "{}" });
-      }
+      const uploaded = file ? await client.uploadToSandbox(taskId, file) : {};
+      await client.askResponse({ taskId, connId, text: JSON.stringify(uploaded) });
     } catch (e) {
-      status = "error";
-      errorMsg = `upload handling failed: ${(e as Error).message}`;
-      done = true;
+      // 上传失败不终止任务：回 {} 让 Agent 不卡住，仅记录（与 Python 端一致）
+      errorMsg = errorMsg ?? `upload handling failed: ${(e as Error).message}`;
+      try {
+        await client.askResponse({ taskId, connId, text: "{}" });
+      } catch {
+        /* askResponse 也失败就放弃，靠 SSE/重连兜底 */
+      }
     }
   }
 
@@ -116,7 +117,7 @@ export async function runTask(client: InfiniSynapseClient, opts: RunTaskOptions)
       const key = typeof m.ts === "number" ? m.ts : -1;
       if (!handledAsks.has(key)) {
         handledAsks.add(key);
-        void handleUpload(m); // 异步处理，不阻塞 SSE 循环
+        pendingUploads.push(handleUpload(m)); // 异步处理，不阻塞 SSE；结束前 await
       }
     }
     if (isCompletion(m)) done = true;
@@ -135,7 +136,7 @@ export async function runTask(client: InfiniSynapseClient, opts: RunTaskOptions)
       }
       return false;
     }
-    if (ev.event === "message.add" || ev.event === "message.partial") {
+    if (ev.event === "message.add" || ev.event === "message.partial" || ev.event === "message.update") {
       const m = (ev.data as { message?: AgentMessage })?.message;
       if (m) handleMessage(m);
     }
@@ -217,6 +218,9 @@ export async function runTask(client: InfiniSynapseClient, opts: RunTaskOptions)
       // best effort，拉不到就靠下一次重连继续
     }
   }
+
+  // 等所有在途上传收尾，避免任务 promise 先于上传 resolve（请求泄漏）
+  if (pendingUploads.length) await Promise.allSettled(pendingUploads);
 
   // 5. 读产物（完成才读）
   let workspace: TaskWorkspace | null = null;

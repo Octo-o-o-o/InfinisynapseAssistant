@@ -16,11 +16,18 @@
 - ✅ 防漂移：`tools/sync-skills.sh` + 升级版 `manifest.json`。
 - ✅ 治理：`CHANGELOG.md`、`CONTRIBUTING.md`、`docs/LICENSE-NOTES.md`、CI 模板。
 
+## 文档与 SDK 增强已完成（0.3.x）
+
+- ✅ SSE 重连：指数退避 + 心跳看门狗 + `getUiMessageById` 断点续传（TS/Python，含单测）。
+- ✅ 参考扩充：`docs/reference/capabilities.md`（能力总览）、`glossary.md`（术语）。
+- ✅ Playbooks：安全接入、RAG/文件放置、市场订阅、Browser Use、任务分享、排查；安全接入含信任边界 SVG。
+- ✅ 扫描器健壮性：块注释刷白 + 占位符跳过，消除 token 误报 HIGH。
+
 ## 后续改进
 
 1. 等 `infini_docker` 可用后，补充基于源码的部署规则与校验。
 2. 私有化部署验收清单（生产 Linux 主机）+ 基于真实部署的 contract tests。
-3. SDK 增强：SSE 重连/超时/取消的完整实现与单测；补齐数据源/RAG/分享端点封装。
+3. SDK 增强：在 client 里补齐数据源/RAG/市场订阅/任务分享端点封装（目前 playbook 有、SDK 方法未覆盖）。
 4. 扫描器增强：把 api-index.md 的端点清单做成数据源，自动校验 SDK/文档不引用未知端点。
 5. 拿到真实 Key 后，增加一个可选的端到端 smoke（不入 CI，需手动提供凭据）。
 6. 基于 `upstream-docs/` 增加适合 RAG 的索引或 embedding 流程。

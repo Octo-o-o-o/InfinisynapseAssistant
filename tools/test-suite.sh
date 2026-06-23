@@ -32,8 +32,10 @@ if [ -f "$SCANNER" ]; then
   assert_exit "tools/hooks/test-fixtures/bad-newtask-no-sse.ts" 1
   assert_contains_rule "tools/hooks/test-fixtures/bad-newtask-no-sse.ts" "INF-SSE-001"
   assert_exit "tools/hooks/test-fixtures/bad-download-as-json.ts" 1
+  assert_contains_rule "tools/hooks/test-fixtures/bad-download-as-json.ts" "INF-DL-001"
   assert_exit "tools/hooks/test-fixtures/good-server-proxy.ts" 0
   assert_exit "tools/hooks/test-fixtures/good-deploy.env" 0
+  assert_exit "tools/hooks/test-fixtures/good-doc-tokens.ts" 0
   # --json 必须合法
   if bash "$SCANNER" --json "tools/hooks/test-fixtures/bad-authing.env" | python3 -m json.tool >/dev/null 2>&1; then
     ok "scanner --json 输出合法 JSON"

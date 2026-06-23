@@ -29,9 +29,9 @@ Claude 写规则或方案时，先判断内容属于哪类：官方事实放 `up
 1. `AGENTS.md`
 2. `docs/CONTENT-MODEL.md`（判断内容应放在官方事实还是特定用法）
 3. `docs/README.md`（定位人类文档、reference、playbooks）
-4. `docs/reference/api-index.md` + `docs/reference/task-lifecycle.md`（定位端点与时序）
+4. `docs/reference/`：`capabilities.md`（能力总览）、`api-index.md`（端点）、`task-lifecycle.md`（SSE 时序）、`glossary.md`（术语）
 5. 用户任务对应的 `.claude/skills/*/SKILL.md`
-6. 涉及 RAG/文件放置时读 `docs/playbooks/rag-file-placement.md`
+6. 对应场景读 `docs/playbooks/`：安全接入、RAG/文件放置、市场订阅、Browser Use、任务分享、排查
 
 ## Skills
 

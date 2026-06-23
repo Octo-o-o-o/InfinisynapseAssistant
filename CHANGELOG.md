@@ -3,6 +3,25 @@
 本项目变更记录，遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 版本对应规则包成熟度，不对应 InfiniSynapse 官方版本。
 
+## [0.3.5] - 2026-06-24
+
+全项目审查（两路独立 agent + 自查）后修复真实代码 bug 与文档陈旧。
+
+### Fixed（代码）
+- **TS（高危）** `runTask` 上传与完成竞态：upload-ask 用 `void handleUpload` fire-and-forget，任务 promise 会先于上传 resolve（请求泄漏）且错误被吞——改为收集 `pendingUploads`，返回前 `await Promise.allSettled`。
+- **扫描器（高危）** 块注释里的 token 与纯 ASCII 占位符被误判为硬编码 → `exit 2` 阻塞编辑——新增 `/* */` 块注释刷白 + 占位符跳过；加 `good-doc-tokens.ts` fixture 锁定。
+- **TS/Python** 漏处理 SSE `message.update` 事件（文档列为"更新已有消息"）——两端纳入 `message.add`/`partial`/`update` 一并处理。
+- **Python** `_multipart` 的 `json.loads` 无 try/except（非 JSON 上传响应会崩）；`download_task_file` 不处理 `HTTPError`——补齐，与 TS 一致抛 `InfiniSynapseError`。
+- **TS/Python** 上传失败处理对齐：统一为"回 `{}` 不终止任务"，Python `_handle_upload` 改为 `except Exception` 兜底。
+
+### Fixed（文档陈旧）
+- README 测试计数 `37 → 44`；"高危"措辞改准确（仅 SEC/ENV 阻塞，SSE/DL 提醒）；项目结构树补 CHANGELOG/CONTRIBUTING/proposals 与 reference/playbooks 实际内容；`.claude/` 钩子位置说明纠正。
+- `.agents/skills/manifest.json` 版本 `0.2.0 → 0.3.4`（并同步镜像）。
+- `CLAUDE.md` 启动清单补 capabilities/glossary/playbooks；`docs/USAGE-GUIDE.md` 常见任务表补全新 playbook；`docs/PROJECT-ARCHITECTURE.md` 补 playbooks 分层；`docs/PLAN.md` 把已完成的 SSE 重连移出待办。
+
+### Changed（测试）
+- test-suite 补 `INF-DL-001` 规则断言与 `good-doc-tokens` 干净断言；reconnect 测试补 `message.update` 与上传 await 两个用例（TS 测试 22 项 / Python 15 项）。
+
 ## [0.3.4] - 2026-06-23
 
 ### Added

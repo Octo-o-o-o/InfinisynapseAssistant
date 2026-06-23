@@ -1,6 +1,6 @@
 {
   "name": "infinisynapse-ai-workspace",
-  "version": "0.2.0",
+  "version": "0.3.4",
   "description": "Skill registry for the InfiniSynapse AI rule pack.",
   "source_of_truth": ".agents/skills/",
   "platform": {

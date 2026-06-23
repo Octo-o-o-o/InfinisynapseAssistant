@@ -45,12 +45,17 @@ AI 应该读取：
 
 | 任务 | 优先读取 |
 | --- | --- |
-| 私有化部署 | `infinisynapse-deployment` skill |
-| 排查部署后空白页 / 401 | `private-deployment-guide.md` 第 8 节 |
-| 写 SDK 或后端 route | `infinisynapse-server-api` skill |
+| 了解平台能做什么 | `docs/reference/capabilities.md` |
+| 写 SDK 或后端 route | `infinisynapse-server-api` skill + `samples/sdk/` |
+| 安全接入 / 不泄露 API Key | `docs/playbooks/secure-integration.md` |
+| RAG 资料 / 文件放哪里 | `docs/playbooks/rag-file-placement.md` |
+| 订阅共享数据源 / 知识库 | `docs/playbooks/market-subscriptions.md` |
+| 浏览器自动化或购物比价 | `docs/playbooks/browser-use.md` + `infinisynapse-browser-extension` skill |
+| 分享 / 公开只读结果页 | `docs/playbooks/task-sharing.md` |
 | 做报告写作类产品 | `infinisynapse-product-patterns` skill |
 | 使用 CLI endpoint | `infinisynapse-cli` skill |
-| 浏览器自动化或购物比价 | `infinisynapse-browser-extension` skill |
+| 私有化部署 | `infinisynapse-deployment` skill |
+| 排查报错 / 部署登录失败 | `docs/playbooks/troubleshooting.md` |
 
 ## 开发姿态
 

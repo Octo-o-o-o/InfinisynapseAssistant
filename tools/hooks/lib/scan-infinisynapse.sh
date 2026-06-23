@@ -56,6 +56,21 @@ is_comment_line() {
   esac
 }
 
+# 把 /* ... */ 块注释（可跨行）刷成空格，保留行结构（行号不变）。
+# 避免块注释里的 token / endpoint 被规则误判（单行 // 和 # 注释仍由 is_comment_line 处理）。
+scrub_block_comments() {
+  awk '
+  {
+    line=$0; out=""; i=1; n=length(line)
+    while (i<=n) {
+      two=substr(line,i,2)
+      if (inb) { if (two=="*/"){inb=0;out=out"  ";i+=2} else {out=out" ";i++} }
+      else { if (two=="/*"){inb=1;out=out"  ";i+=2} else {out=out substr(line,i,1);i++} }
+    }
+    print out
+  }' "$1"
+}
+
 # 按正则找行（跳过注释行），命中即 add_finding
 find_rule() {
   local rule="$1" sev="$2" msg="$3" pat="$4"
@@ -102,6 +117,9 @@ first_line() {
 }
 
 base="$(basename "$FILE")"
+ORIG_FILE="$FILE"   # 保留原始路径用于输出；代码段会把 FILE 临时指向刷白副本
+SCRUBBED=""
+trap '[[ -n "${SCRUBBED:-}" ]] && rm -f "$SCRUBBED" 2>/dev/null || true' EXIT
 
 # ---------------- 环境/配置规则（.env / compose / yaml / 任意含变量的文件）----------------
 
@@ -133,9 +151,21 @@ done < <(grep -nE 'AUTHING_SERVER_URL[[:space:]]*[:=]' "$FILE" 2>/dev/null || tr
 # ---------------- 代码规则（按扩展名）----------------
 case "$base" in
   *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs|*.py|*.go|*.java|*.kt|*.rb|*.php)
-    # INF-SEC-001：硬编码 Bearer token（排除占位符 <...>、模板字符串 ${...}、拼接）
-    find_rule "INF-SEC-001" "HIGH" "硬编码 Bearer token；API Key 必须来自服务端环境变量/密钥管理" \
-      "Bearer [A-Za-z0-9][A-Za-z0-9._-]{15,}"
+    # 代码段：把块注释刷白后再扫，避免块注释里的 token/endpoint 误判
+    SCRUBBED="$(mktemp 2>/dev/null || echo "/tmp/inf-scrub-$$")"
+    if scrub_block_comments "$ORIG_FILE" > "$SCRUBBED" 2>/dev/null; then FILE="$SCRUBBED"; fi
+
+    # INF-SEC-001：硬编码 Bearer token（块注释已刷白；跳过明显占位符）
+    while IFS= read -r m; do
+      [[ -z "$m" ]] && continue
+      ln="${m%%:*}"; content="${m#*:}"
+      is_comment_line "$content" && continue
+      tok="$(printf '%s' "$content" | grep -oE 'Bearer [A-Za-z0-9][A-Za-z0-9._-]{15,}' | head -1 | sed 's/^Bearer //')"
+      [[ -z "$tok" ]] && continue
+      case "$tok" in *PLACEHOLDER*|*placeholder*|*YOUR_*|*EXAMPLE*|*example*|*XXXX*|*xxxx*) continue;; esac
+      printf '%s' "$tok" | grep -qE '^[A-Z0-9_]+$' && continue   # 全大写下划线占位
+      add_finding "INF-SEC-001" "HIGH" "$ln" "硬编码 Bearer token；API Key 必须来自服务端环境变量/密钥管理"
+    done < <(grep -nE 'Bearer [A-Za-z0-9][A-Za-z0-9._-]{15,}' "$FILE" 2>/dev/null || true)
 
     # INF-SEC-002：前端文件直连 InfiniSynapse（API Key 暴露风险）
     if code_has 'app\.infinisynapse\.(cn|com)|/api/ai/(events|message)'; then
@@ -174,7 +204,7 @@ case "$base" in
 esac
 
 # ---------------- 输出 ----------------
-rel="${FILE#"$PWD"/}"
+rel="${ORIG_FILE#"$PWD"/}"
 
 if [[ "$MODE" == "json" ]]; then
   printf '['
