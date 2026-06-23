@@ -1,32 +1,32 @@
-# Quick Reference
+# 速查
 
-## Deployment
+## 私有化部署
 
-- Recommended host: 8 cores, 32 GB RAM, 100 GB disk.
-- Minimum RAM: 16 GB, but lower InfiniSQL memory settings.
-- OS: Ubuntu 22.04 LTS recommended.
-- Docker: Docker >= 24, Compose plugin >= 2.20.
-- Exposed ports: `8088` main app, `80` admin console, `3000` auth API.
-- `AUTHING_SERVER_URL` must be browser-reachable, usually `http://<server>:3000/api`.
+- 推荐主机：8 核、32 GB RAM、100 GB 磁盘。
+- 最低内存：16 GB，但需要降低 InfiniSQL 内存配置。
+- 操作系统：推荐 Ubuntu 22.04 LTS。
+- Docker：Docker >= 24，Compose plugin >= 2.20。
+- 对外端口：`8088` 主应用、`80` 管理控制台、`3000` 认证 API。
+- `AUTHING_SERVER_URL` 必须是浏览器可访问地址，通常是 `http://<server>:3000/api`。
 
-## Base URLs
+## 基础地址
 
-| Environment | Base URL |
+| 环境 | 基础地址 |
 | --- | --- |
-| Mainland China | `https://app.infinisynapse.cn` |
-| Overseas | `https://app.infinisynapse.com` |
-| Private deployment | Your own service URL |
+| 中国大陆 SaaS | `https://app.infinisynapse.cn` |
+| 海外 SaaS | `https://app.infinisynapse.com` |
+| 私有化部署 | 你的服务地址 |
 
-All Server API endpoints start with `/api`.
+所有 Server API endpoint 都以 `/api` 开头。
 
-## SaaS Console
+## SaaS 控制台
 
-- API Key: open `https://app.infinisynapse.cn/tasks`, click lower-left settings, then **API Key Management**.
-- Tasks created by your Server API integrations appear in **ALL TASKS**.
-- `public-engine` is the default shared compute resource.
-- Use **Create Exclusive Compute Resource** when a product needs more stable quota, resource isolation, or exclusive execution.
+- API Key：打开 `https://app.infinisynapse.cn/tasks`，点击左下角设置，再进入 **API Key Management**。
+- 通过 Server API 创建的任务会出现在 **ALL TASKS**。
+- `public-engine` 是默认共享计算资源。
+- 产品需要更稳定额度、资源隔离或独占执行时，使用 **Create Exclusive Compute Resource**。
 
-## Headers
+## 请求头
 
 ```http
 Authorization: Bearer <API Key>
@@ -34,34 +34,34 @@ Content-Type: application/json
 x-lang: zh_CN
 ```
 
-Uploads use `multipart/form-data`.
+上传接口使用 `multipart/form-data`。
 
-## Long task flow
+## 长任务流程
 
 1. `GET /api/ai/events?connId=<uuid>`
-2. `POST /api/ai/message` with `type=newTask`
-3. Consume SSE `message.partial`, `message.add`, `notification`, `heartbeat`
-4. Continue with `type=askResponse`
-5. Inspect artifacts with `GET /api/ai_task/getTaskWorkspace/:id`
-6. Preview with `POST /api/ai_task/previewFile`
-7. Download with `GET /api/tools/storage/downloadTaskFile/:taskId?path=`
+2. `POST /api/ai/message`，`type=newTask`
+3. 消费 SSE：`message.partial`、`message.add`、`notification`、`heartbeat`
+4. 需要继续回答时使用 `type=askResponse`
+5. 用 `GET /api/ai_task/getTaskWorkspace/:id` 查看产物
+6. 用 `POST /api/ai_task/previewFile` 预览
+7. 用 `GET /api/tools/storage/downloadTaskFile/:taskId?path=` 下载
 
-## Upload modes
+## 上传模式
 
-| Endpoint | Use |
+| Endpoint | 用途 |
 | --- | --- |
-| `/api/ai/upload?taskId=` | Respond to Agent sandbox upload request |
-| `/api/tools/taskUpload/:taskId?subdir=&naming=` | Proactively archive product files into workspace |
-| `/api/upload/:directory` | Generic directory upload |
+| `/api/ai/upload?taskId=` | 响应 Agent sandbox 上传请求 |
+| `/api/tools/taskUpload/:taskId?subdir=&naming=` | 产品主动把文件归档到 workspace |
+| `/api/upload/:directory` | 通用目录上传 |
 
-## Common errors
+## 常见错误
 
-| Symptom | First check |
+| 现象 | 优先检查 |
 | --- | --- |
-| `1101` / `1105` | API Key expired or invalid |
-| HTTP `422` | Request validation error |
-| HTTP `400` | Business validation error |
-| HTTP `404` | Resource missing or inaccessible |
-| No SSE data | Authorization and whether SSE connected before sending message |
-| Login fails / blank page after private deploy | `AUTHING_SERVER_URL` |
-| `infini-sql` OOM | Lower InfiniSQL memory env vars |
+| `1101` / `1105` | API Key 是否过期或无效 |
+| HTTP `422` | 请求参数校验错误 |
+| HTTP `400` | 业务校验错误 |
+| HTTP `404` | 资源不存在或无权限访问 |
+| 没有 SSE 数据 | 鉴权是否正确，以及是否先连接 SSE 再发送任务 |
+| 私有化部署后登录失败 / 空白页 | `AUTHING_SERVER_URL` |
+| `infini-sql` OOM | 降低 InfiniSQL 内存环境变量 |

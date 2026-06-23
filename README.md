@@ -19,6 +19,21 @@ InfiniSynapse 目前在公开训练语料里覆盖较少，AI 助手很容易在
 
 本仓库的目标就是让这些规则成为 AI 助手的默认上下文。
 
+## 相比直接保存原始文档的优势
+
+如果只是把官网文档下载到本地，它仍然是“被动参考资料”：AI 需要自己判断该读哪一页、哪些规则更重要、哪些路径适合当前任务。这个仓库在原始文档之上增加了一层面向 AI 协作的工程化结构：
+
+- **有明确入口**：`AGENTS.md`、`CLAUDE.md`、`llms.txt` 告诉 AI 先读什么、按什么优先级读，避免每次从一堆 Markdown 里自行猜上下文。
+- **有任务分流**：`.agents/skills/` 把部署、Server API、CLI、产品模式、浏览器插件拆成独立 skill，AI 会按任务读取更小、更相关的规则。
+- **有强约束规则**：把“API Key 必须在服务端”“先连 SSE 再发任务”“结果要读 workspace”“`AUTHING_SERVER_URL` 不能写错”等高风险点从文档描述提升为默认开发约束。
+- **有产品编排模式**：不仅保存 endpoint，还整理了高考助手、购物比价、报告快写等应用级调用流程，方便从“单接口调用”推进到“可落地产品设计”。
+- **有跨工具 fan-out**：同一套规则同步给 Codex、Claude Code、Cursor、Copilot 和通用 LLM/RAG 使用，避免不同工具读到不同上下文。
+- **有可验证脚本**：`tools/doctor.sh` 和 `tools/test-suite.sh` 会检查关键文档、截图、skills、同步结果是否存在，避免知识库悄悄缺文件。
+- **有同步机制**：`tools/sync-upstream-docs.sh` 可以重新抓取 zh/en 两套官方文档和截图，方便后续跟进官网更新。
+- **有来源审计**：`docs/SOURCE-AUDIT.md` 记录哪些上游可用、哪些不可用，例如当前 `infini_docker` GitHub 仓库返回 404。
+
+换句话说，原始文档解决“资料在本地”的问题；这个项目解决“AI 如何稳定、按正确顺序、带着安全边界使用这些资料开发应用”的问题。
+
 ## 文档优先级
 
 开发产品时优先读中文 SaaS/API 文档，英文文档只作为补充。
@@ -54,7 +69,7 @@ InfiniSynapse 目前在公开训练语料里覆盖较少，AI 助手很容易在
 └── upstream-src/                     # 预留上游源码 / 离线包位置
 ```
 
-这个结构参考了本地 `HarmonyOS_DevSpace` 的成功形态：入口规则、skills、Cursor/Copilot fan-out、上游文档镜像和验证脚本分层组织。不同点是 HarmonyOS 项目重点解决 ArkTS 编译与生态规则问题；本项目重点解决 InfiniSynapse SaaS/API 调用、产品编排、部署和安全边界问题。
+这个结构把原始文档、任务型规则、AI 工具入口和验证脚本分层组织。原始文档保留事实来源，skills 负责把事实转成开发约束，脚本负责保证本地镜像和规则包没有缺关键文件。
 
 ## AI 工具入口
 
@@ -66,7 +81,7 @@ InfiniSynapse 目前在公开训练语料里覆盖较少，AI 助手很容易在
 | GitHub Copilot | `.github/copilot-instructions.md` + `.github/instructions/` |
 | 任意 LLM / RAG | `llms.txt` |
 
-## Skills
+## 技能（Skills）
 
 | Skill | 触发场景 | 必读文档 |
 | --- | --- | --- |
@@ -248,6 +263,6 @@ git clone https://github.com/chaozwn/infini_docker.git upstream-src/infini_docke
 - 还没有 Node.js / Python SDK 封装，只沉淀了 API 规则和调用流程。
 - `upstream-src/infini_docker/` 尚未补齐，因为官方 GitHub 仓库当前返回 404。
 
-## License
+## 许可证
 
 本仓库当前未声明开源许可证。`upstream-docs/` 中的网页快照和截图来自 InfiniSynapse 官方公开页面，仅作为本地开发辅助资料使用。

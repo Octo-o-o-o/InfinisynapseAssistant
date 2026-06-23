@@ -1,33 +1,50 @@
-# Project Architecture
+# 项目架构
 
-This workspace follows the same broad idea as `HarmonyOS_DevSpace`: one local repository acts as an AI-readable rule pack, with cross-tool entry files, skills, upstream documentation, and lightweight validation scripts.
+这个仓库的定位是 InfiniSynapse 的 AI 规则工作区。它不是简单的文档镜像，而是在官方文档之上增加了任务分流、开发约束、跨工具入口和验证脚本，让 AI 助手能更稳定地开发基于 InfiniSynapse 的应用。
 
-It deliberately does not copy HarmonyOS-specific compiler hooks. InfiniSynapse development has different failure modes.
+## 分层结构
 
-## Layers
-
-| Layer | Directory | Purpose |
+| 层级 | 目录 / 文件 | 作用 |
 | --- | --- | --- |
-| Entry rules | `AGENTS.md`, `CLAUDE.md`, `llms.txt` | First files an AI assistant should read |
-| Task skills | `.agents/skills/`, `.claude/skills/` | Scenario-specific instructions |
-| Tool fan-out | `.cursor/rules/`, `.github/` | Cursor and Copilot compatible instructions |
-| Upstream docs | `upstream-docs/` | Official public documentation snapshots |
-| Upstream source | `upstream-src/` | Placeholder for `infini_docker` source or offline package |
-| Operations docs | `docs/` | Audit, usage, plan, quick reference |
-| Scripts | `tools/` | Sync, doctor, and test commands |
+| 入口规则 | `AGENTS.md`, `CLAUDE.md`, `llms.txt` | AI 启动后优先读取的导航和通用约束 |
+| 任务 skills | `.agents/skills/`, `.claude/skills/` | 按部署、Server API、CLI、产品模式、浏览器插件分流 |
+| 工具适配 | `.cursor/rules/`, `.github/` | Cursor 和 GitHub Copilot 可读取的规则 |
+| 上游文档 | `upstream-docs/` | 官方公开文档和截图的本地快照 |
+| 上游源码 | `upstream-src/` | 预留 `infini_docker` 源码或离线包位置 |
+| 项目文档 | `docs/` | 使用说明、来源审计、速查、后续计划 |
+| 脚本 | `tools/` | 文档同步、项目体检、轻量测试 |
+| 示例 | `samples/templates/` | 服务端 Agent Flow 等可复制骨架 |
 
-## Why this architecture
+## 设计原则
 
-The HarmonyOS project needs language rules, build hooks, and scanner feedback because AI often writes ArkTS that does not compile.
+- **中文 SaaS 文档优先**：开发产品时优先读 `upstream-docs/infinisynapse-site/zh/markdown/`。
+- **英文文档兜底**：当中文文档没有覆盖细节时，再读英文补充快照。
+- **事实和规则分离**：`upstream-docs/` 保存上游事实，`AGENTS.md` 和 skills 把事实转成开发规则。
+- **任务触发而不是全量灌入**：AI 不应每次读完整文档，而应按当前任务读取相关 skill 和对应文档。
+- **服务端优先**：所有产品集成默认采用服务端代理模式，API Key 不进入前端。
+- **长任务优先按流程实现**：先连 SSE，再发 `newTask`，完成后读取 workspace 产物。
+- **同步后必须验证**：更新文档后运行 `npm test`，确认关键内容没有丢失。
 
-InfiniSynapse work is more service-oriented. The important constraints are:
+## 相比原始文档镜像多了什么
 
-- Correct deployment environment variables and network exposure.
-- Correct API flow: SSE connection before message dispatch.
-- Correct credential boundaries: API Key server-side.
-- Correct distinction between sandbox uploads, workspace uploads, preview, and download.
-- Correct product pattern selection: not every task needs Browser Use.
-- Fast local lookup because public AI training data is thin.
+原始文档镜像只解决“资料可离线查看”。本项目额外提供：
 
-So this workspace focuses on task-triggered skills, endpoint references, and product integration checklists.
+- AI 启动入口和阅读顺序。
+- 按任务拆分的 skills。
+- 高风险开发规则和安全边界。
+- 面向产品落地的 API 编排模式。
+- 多 AI 工具可读取的规则 fan-out。
+- 本地同步、体检和测试脚本。
+- 上游源码和文档可用性的审计记录。
+
+因此，它更像一个“可执行的开发规范包”，而不是资料归档目录。
+
+## 关键风险边界
+
+- API Key 只能放在服务端或密钥管理系统中。
+- 不能在文档没有依据时编造 endpoint、method 或 body 字段。
+- 长任务必须先建立 `/api/ai/events`，再调用 `/api/ai/message`。
+- 上传要区分 Agent sandbox 上传和产品主动归档上传。
+- 最终交付物优先从 task workspace 读取。
+- 私有化部署排查时优先检查 `AUTHING_SERVER_URL`。
 
