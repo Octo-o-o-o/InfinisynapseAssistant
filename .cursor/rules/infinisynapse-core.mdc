@@ -1,0 +1,19 @@
+---
+description: InfiniSynapse core development rules
+globs:
+  - "**/*.ts"
+  - "**/*.tsx"
+  - "**/*.js"
+  - "**/*.py"
+  - "**/*.md"
+alwaysApply: false
+---
+
+# InfiniSynapse Core Rules
+
+- Read `AGENTS.md` before changing InfiniSynapse integration code.
+- Search `upstream-docs/infinisynapse-site/zh/markdown/` before using an endpoint; English docs are supplemental only.
+- Keep API Key server-side.
+- Connect `GET /api/ai/events?connId=` before `POST /api/ai/message`.
+- Use workspace APIs for deliverables: `getTaskWorkspace`, `previewFile`, `downloadTaskFile`.
+- For private deployment, check `AUTHING_SERVER_URL` first.

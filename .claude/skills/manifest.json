@@ -1,0 +1,25 @@
+{
+  "skills": [
+    {
+      "name": "infinisynapse-deployment",
+      "path": "infinisynapse-deployment/SKILL.md"
+    },
+    {
+      "name": "infinisynapse-server-api",
+      "path": "infinisynapse-server-api/SKILL.md"
+    },
+    {
+      "name": "infinisynapse-cli",
+      "path": "infinisynapse-cli/SKILL.md"
+    },
+    {
+      "name": "infinisynapse-product-patterns",
+      "path": "infinisynapse-product-patterns/SKILL.md"
+    },
+    {
+      "name": "infinisynapse-browser-extension",
+      "path": "infinisynapse-browser-extension/SKILL.md"
+    }
+  ]
+}
+

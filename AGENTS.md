@@ -1,0 +1,91 @@
+# AGENTS.md · InfiniSynapse 开发助手通用规范
+
+本文件是所有 AI 编码助手在本工作区里的单一通用入口。写 InfiniSynapse 相关代码、部署脚本、SDK、后端业务路由、mini-app、CLI 集成或故障排查时，先读本文件，再按场景读取对应 skill。
+
+## 0. Skills 触发索引
+
+Codex 默认读 `.agents/skills/`，Claude Code 默认读 `.claude/skills/`。触发规则:
+
+| 用户场景 | skill | 必读上游文档 |
+| --- | --- | --- |
+| 私有化部署、Docker Compose、`.env`、登录失败、OOM、端口冲突 | `infinisynapse-deployment` | `zh/markdown/private-deployment-guide.md` |
+| 直接调 HTTP API、写 SDK、SSE、任务、数据源、RAG、文件上传/下载 | `infinisynapse-server-api` | `zh/markdown/server-api-reference.md` |
+| 使用或复刻 `agent_infini` CLI、排查 CLI 网络请求 | `infinisynapse-cli` | `zh/markdown/cli-api-reference.md` |
+| 设计高考助手、购物比价、报告写作等任务型产品 | `infinisynapse-product-patterns` | `zh/markdown/server-api-reference.md` 第 10 节 |
+| Browser Use / Chrome 插件安装、购物或网页自动化产品 | `infinisynapse-browser-extension` | `zh/markdown/chrome-plugin-install.md` |
+
+## 1. 文档优先级
+
+1. `upstream-docs/infinisynapse-site/zh/markdown/` 的中文 SaaS 文档快照
+2. `upstream-docs/infinisynapse-site/markdown/` 的英文补充快照
+3. `upstream-src/infini_docker/`，仅当源码成功补齐后可用
+4. 官方网页: `https://www.infinisynapse.cn/zh/docs`
+5. 网络搜索，仅用于确认官方内容是否更新
+
+如果用户问“最新”“现在”“今天”，先运行或建议运行 `bash tools/sync-upstream-docs.sh`，再基于本地快照作答。
+
+## 2. 不要编造接口
+
+- 不确定 endpoint、method、body 字段时，必须先 `rg` 搜本地 Markdown。
+- 当前 Server API 的全局路径前缀是 `/api`。
+- 默认中国大陆 Base URL 是 `https://app.infinisynapse.cn`，海外是 `https://app.infinisynapse.com`。
+- 私有化部署时 Base URL 替换为自有服务地址。
+- 业务接口默认需要 `Authorization: Bearer <API Key>`。
+- 主应用请求可带 `x-lang`，默认 `zh_CN`。
+- SaaS API Key 在 `https://app.infinisynapse.cn/tasks` 左下角设置菜单的 **API Key Management** 里创建和查看。
+- `https://app.infinisynapse.cn/tasks` 也是开发者后台: Server API 创建的任务会出现在 **ALL TASKS**，可回看状态、消息、执行过程和工作区产物。
+- 默认计算资源是 `public-engine`；需要稳定配额、隔离或独占环境时，使用右上角资源菜单创建并切换独占计算资源。
+
+## 3. 安全硬约束
+
+- 不要把 API Key 写进浏览器、前端 bundle、移动端包或截图。
+- 产品集成优先做 server-side business route: 前端只调自家后端，自家后端持有 API Key 并代理 InfiniSynapse。
+- SaaS API Key 泄露后，应在 **API Key Management** 删除旧 Key 并重新创建。
+- 日志里不要输出完整 token、数据库密码、Mongo URI、Redis 密码、JWT secret。
+- 文档里的示例密码只能用于识别字段，不能作为生产默认值。
+
+## 4. Server API 长任务铁律
+
+开发长任务产品时，默认流程是:
+
+1. 生成 `connId`，需要恢复或轮询时同时预生成 `taskId`。
+2. 先建立 `GET /api/ai/events?connId=<uuid>` SSE 连接。
+3. 再调用 `POST /api/ai/message`，`type=newTask`，带同一个 `connId`。
+4. 从 SSE 的 `message.partial` / `message.add` / `notification` 推进状态。
+5. 若收到 `message.ask=upload_file_to_sandbox`，先上传文件，再用 `type=askResponse` 继续。
+6. 结束后通过 `getTaskWorkspace`、`previewFile`、`downloadTaskFile` 读取产物，不要只依赖最后一条文本。
+
+## 5. 文件上传和产物下载
+
+- `/api/ai/upload?taskId=`: 响应 Agent 的 sandbox 文件请求。
+- `/api/tools/taskUpload/:taskId?subdir=...&naming=...`: 产品主动把资料归档到 task workspace。
+- `/api/ai_task/getTaskWorkspace/:id`: 枚举 workspace 文件。
+- `/api/ai_task/previewFile`: 预览可读文件。
+- `/api/tools/storage/downloadTaskFile/:taskId?path=`: 下载 task 文件。需要浏览器内联显示图片/PDF 时可用 `inline=1`。
+
+## 6. 私有化部署铁律
+
+- `AUTHING_SERVER_URL` 变量名必须完整，不能写成 `AUTH_SERVER_URL`。
+- `AUTHING_SERVER_URL` 必须浏览器可访问，不能使用容器名或 `127.0.0.1`。
+- 默认端口是 `3000`，路径是 `/api`，不要带尾部 `/`。
+- 对外端口要覆盖 `8088` 主应用、`80` 管理台、`3000` auth API。
+- `infini-synapse-mysql-migrate` 显示 `Exited (0)` 是正常的一次性迁移任务。
+- 低于 32 GB 内存的主机要主动降低 InfiniSQL 内存配置。
+
+## 7. 浏览器插件
+
+Browser Use 不是所有产品都需要。表单生成报告、后端批量分析通常不需要 Chrome 插件；购物比价、网页调研、需要 AI 操作用户浏览器的产品才需要检查 `/api/ai_browser/session` 并引导安装插件。
+
+## 8. 改完后验证
+
+```bash
+bash tools/doctor.sh
+npm test
+```
+
+如果涉及上游文档更新:
+
+```bash
+bash tools/sync-upstream-docs.sh
+git diff -- upstream-docs/
+```

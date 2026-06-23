@@ -1,0 +1,39 @@
+# InfiniSynapse AI Workspace
+
+This workspace is a local rule pack for AI assistants building products on top of InfiniSynapse.
+
+## Core files
+
+- AGENTS.md: primary cross-tool rules.
+- CLAUDE.md: Claude Code entry.
+- README.md: project overview.
+- docs/USAGE-GUIDE.md: how to use the workspace.
+- docs/SOURCE-AUDIT.md: upstream source availability and fetch attempts.
+- docs/QUICK-REFERENCE.md: high-signal endpoint and deployment notes.
+
+## Upstream docs
+
+- upstream-docs/infinisynapse-site/zh/markdown/private-deployment-guide.md
+- upstream-docs/infinisynapse-site/zh/markdown/server-api-reference.md
+- upstream-docs/infinisynapse-site/zh/markdown/cli-api-reference.md
+- upstream-docs/infinisynapse-site/zh/markdown/chrome-plugin-install.md
+- upstream-docs/infinisynapse-site/markdown/private-deployment-guide.md
+- upstream-docs/infinisynapse-site/markdown/server-api-reference.md
+- upstream-docs/infinisynapse-site/markdown/cli-api-reference.md
+- upstream-docs/infinisynapse-site/markdown/chrome-plugin-install.md
+- upstream-docs/infinisynapse-site/html/
+- upstream-docs/infinisynapse-site/assets/
+
+## Skills
+
+- .agents/skills/infinisynapse-deployment/SKILL.md
+- .agents/skills/infinisynapse-server-api/SKILL.md
+- .agents/skills/infinisynapse-cli/SKILL.md
+- .agents/skills/infinisynapse-product-patterns/SKILL.md
+- .agents/skills/infinisynapse-browser-extension/SKILL.md
+
+## Tooling
+
+- tools/sync-upstream-docs.sh: fetch official public docs and convert them to Markdown.
+- tools/doctor.sh: check local workspace health and upstream source availability.
+- tools/test-suite.sh: lightweight consistency tests.
