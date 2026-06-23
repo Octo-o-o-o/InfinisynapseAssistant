@@ -3,6 +3,17 @@
 本项目变更记录，遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 版本对应规则包成熟度，不对应 InfiniSynapse 官方版本。
 
+## [Unreleased]
+
+### Added
+- `docs/MAINTENANCE.md`：上游同步、影响判断、派生文档更新、发布前检查的维护手册。
+- README 增加 InfiniSynapse 官网、中文文档、国内 SaaS 控制台和海外 SaaS 链接。
+
+### Changed
+- `docs/USAGE-GUIDE.md` 补充新项目/老项目接入流程，明确本仓库主入口是 AI 规则包 / skills，npm 仅用于验证和扫描。
+- `docs/README.md`、`AGENTS.md`、`CLAUDE.md`、`llms.txt`、`CONTRIBUTING.md` 接入维护手册。
+- `tools/doctor.sh` / `tools/test-suite.sh` 将维护手册、官网链接、npm 使用边界、skill 添加方式和老项目流程纳入验证。
+
 ## [0.3.5] - 2026-06-24
 
 全项目审查（两路独立 agent + 自查）后修复真实代码 bug 与文档陈旧。

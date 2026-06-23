@@ -22,6 +22,7 @@
 - ✅ 参考扩充：`docs/reference/capabilities.md`（能力总览）、`glossary.md`（术语）。
 - ✅ Playbooks：安全接入、RAG/文件放置、市场订阅、Browser Use、任务分享、排查；安全接入含信任边界 SVG。
 - ✅ 扫描器健壮性：块注释刷白 + 占位符跳过，消除 token 误报 HIGH。
+- ✅ 维护规范：`docs/MAINTENANCE.md`，覆盖上游同步、影响判断、派生文档更新和发布前检查。
 
 ## 后续改进
 

@@ -12,7 +12,7 @@
 | 类型 | 目标 | 典型文件 |
 | --- | --- | --- |
 | AI 友好内容 | 给 AI 明确入口、读取顺序、硬约束和任务分流 | `AGENTS.md`, `CLAUDE.md`, `llms.txt`, `.agents/skills/`, `docs/reference/`, `samples/sdk/` |
-| 人类友好内容 | 给开发者快速理解项目价值、架构、使用方式和核心用法 | `README.md`, `docs/README.md`, `docs/USAGE-GUIDE.md`, `docs/QUICK-REFERENCE.md`, `docs/playbooks/` |
+| 人类友好内容 | 给开发者快速理解项目价值、架构、使用方式和核心用法 | `README.md`, `docs/README.md`, `docs/MAINTENANCE.md`, `docs/USAGE-GUIDE.md`, `docs/QUICK-REFERENCE.md`, `docs/playbooks/` |
 | 官方文档内容 | 保存或提炼 InfiniSynapse 官方公开文档中的事实 | `upstream-docs/`, `docs/reference/api-index.md`, `docs/reference/task-lifecycle.md` |
 | 特定用法内容 | 基于官方事实，对核心场景给出决策、顺序、边界和默认做法 | `.agents/skills/`, `docs/playbooks/`, `docs/QUICK-REFERENCE.md`, `samples/templates/` |
 

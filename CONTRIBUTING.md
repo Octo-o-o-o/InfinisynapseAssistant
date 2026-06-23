@@ -6,7 +6,8 @@
 
 1. `AGENTS.md`（单一通用入口）
 2. `docs/reference/api-index.md`、`task-lifecycle.md`（事实基准）
-3. 对应 skill 的 `SKILL.md`
+3. `docs/MAINTENANCE.md`（同步上游、更新派生文档、发布前检查）
+4. 对应 skill 的 `SKILL.md`
 
 ## 唯一源与镜像
 

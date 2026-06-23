@@ -4,6 +4,13 @@
 
 这个仓库不是 InfiniSynapse 本体，也不是业务应用模板。它的作用是把 InfiniSynapse 当前公开的中文 SaaS/API 文档、私有化部署文档、CLI API、Chrome Browser Use 插件文档，以及面向产品开发的调用模式沉淀成一套本地 AI 规则包。后续开发基于 InfiniSynapse 的应用时，让 AI 先读这个仓库，可以显著减少“重新翻文档”“凭训练数据猜接口”“把 API Key 写进前端”“SSE 顺序写错”等问题。
 
+## 官方链接
+
+- 官网：<https://www.infinisynapse.cn/>
+- 中文文档：<https://www.infinisynapse.cn/zh/docs>
+- 国内 SaaS 控制台：<https://app.infinisynapse.cn/tasks>
+- 海外 SaaS：<https://app.infinisynapse.com>
+
 ## 为什么需要这个项目
 
 InfiniSynapse 目前在公开训练语料里覆盖较少，AI 助手很容易在以下地方出错：
@@ -64,6 +71,7 @@ InfiniSynapse 目前在公开训练语料里覆盖较少，AI 助手很容易在
 ├── docs/
 │   ├── README.md                     # 文档导航：人类入口、目录分层和维护边界
 │   ├── CONTENT-MODEL.md              # AI/人类友好 × 官方/特定用法的内容维护模型
+│   ├── MAINTENANCE.md                # 上游同步、派生文档更新与发布前检查
 │   ├── reference/                    # 事实基准：api-index / capabilities / task-lifecycle / glossary
 │   ├── playbooks/                    # 特定用法：安全接入 / RAG / 市场订阅 / Browser Use / 任务分享 / 排查（+ assets/ 图）
 │   ├── proposals/                    # 产品方案草案（外围，不进规则主线）
@@ -94,6 +102,16 @@ InfiniSynapse 目前在公开训练语料里覆盖较少，AI 助手很容易在
 | Cursor | `.cursor/rules/infinisynapse-core.mdc` |
 | GitHub Copilot | `.github/copilot-instructions.md` + `.github/instructions/` |
 | 任意 LLM / RAG | `llms.txt` |
+
+## 推荐接入方式
+
+这个仓库的主使用方式是**AI 规则包 / skills**，不是 npm 运行时依赖。`npm test`、`npm run scan` 用于验证和护栏；业务项目真正接入时，通常有三种方式：
+
+- 临时使用：在业务项目里让 AI 读取 `/Users/wangyixiao/WorkSpace/InfinisynapseAssistant/AGENTS.md` 和相关 skill。
+- 长期使用：把本仓库作为 `vendor/` 或 git submodule，并在业务项目自己的 `AGENTS.md` / `CLAUDE.md` 固定引用。
+- 代码使用：把 `samples/sdk/` 内化到业务后端；不要把带 API Key 的代码放进前端。
+
+新项目和老项目的具体开发流程见 `docs/USAGE-GUIDE.md`。
 
 ## 技能（Skills）
 
@@ -127,8 +145,8 @@ bash tools/sync-upstream-docs.sh
 当前验证状态：
 
 ```text
-npm test: PASS（44 项，0 失败）
-bash tools/doctor.sh: PASS，仅 upstream-src/infini_docker 缺失为预期 WARN
+npm test: PASS（51 项，0 失败）
+bash tools/doctor.sh: PASS，仅 upstream-src/infini_docker 缺失、GitHub source repository currently unreachable 为预期 WARN
 ```
 
 `infini_docker` 上游源码仓库当前不可 clone，详见 `docs/SOURCE-AUDIT.md`。
@@ -276,6 +294,7 @@ git clone https://github.com/chaozwn/infini_docker.git upstream-src/infini_docke
 
 - `docs/QUICK-REFERENCE.md`: 高信号速查。
 - `docs/CONTENT-MODEL.md`: 内容类型、维护边界和 RAG/文件放置规则。
+- `docs/MAINTENANCE.md`: 上游同步、派生文档更新和发布前检查。
 - `docs/USAGE-GUIDE.md`: 使用方式。
 - `docs/PROJECT-ARCHITECTURE.md`: 架构说明。
 - `docs/SOURCE-AUDIT.md`: 上游文档和源码可用性审计。

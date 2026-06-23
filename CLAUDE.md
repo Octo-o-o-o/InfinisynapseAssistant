@@ -29,9 +29,10 @@ Claude 写规则或方案时，先判断内容属于哪类：官方事实放 `up
 1. `AGENTS.md`
 2. `docs/CONTENT-MODEL.md`（判断内容应放在官方事实还是特定用法）
 3. `docs/README.md`（定位人类文档、reference、playbooks）
-4. `docs/reference/`：`capabilities.md`（能力总览）、`api-index.md`（端点）、`task-lifecycle.md`（SSE 时序）、`glossary.md`（术语）
-5. 用户任务对应的 `.claude/skills/*/SKILL.md`
-6. 对应场景读 `docs/playbooks/`：安全接入、RAG/文件放置、市场订阅、Browser Use、任务分享、排查
+4. 涉及文档维护或上游同步时读 `docs/MAINTENANCE.md`
+5. `docs/reference/`：`capabilities.md`（能力总览）、`api-index.md`（端点）、`task-lifecycle.md`（SSE 时序）、`glossary.md`（术语）
+6. 用户任务对应的 `.claude/skills/*/SKILL.md`
+7. 对应场景读 `docs/playbooks/`：安全接入、RAG/文件放置、市场订阅、Browser Use、任务分享、排查
 
 ## Skills
 
@@ -63,4 +64,5 @@ Claude 写规则或方案时，先判断内容属于哪类：官方事实放 `up
 - 写长任务代码时，默认先连 SSE，再发 `newTask`。
 - 写 RAG / 文件方案时，必须区分 task workspace、sandbox、RAG `docDir`、OSS/S3、数据源上传，不能把 SaaS RAG 写成本机目录；详细规则见 `docs/playbooks/rag-file-placement.md`。
 - 写私有化部署说明时，必须检查 `AUTHING_SERVER_URL` 的四条规则。
+- 维护文档、同步上游或新增 playbook/reference 时，按 `docs/MAINTENANCE.md` 的影响判断表更新。
 - 改完跑 `bash tools/doctor.sh` 和 `npm test`；改了 skill 跑 `bash tools/sync-skills.sh`。
