@@ -1,0 +1,30 @@
+# 示例：在 CI 里对改动文件跑 InfiniSynapse 扫描器。
+# 放到使用本规则包的业务仓库 .github/workflows/ 下。
+name: infinisynapse-scan
+on: [pull_request]
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Scan changed files for InfiniSynapse anti-patterns
+        run: |
+          SCANNER="tools/hooks/lib/scan-infinisynapse.sh"
+          [ -f "$SCANNER" ] || { echo "scanner not found; vendor the rule pack first"; exit 0; }
+          worst=0
+          for f in $(git diff --name-only --diff-filter=ACM origin/${{ github.base_ref }}...HEAD); do
+            case "$f" in
+              *.ts|*.tsx|*.js|*.jsx|*.mjs|*.py|*.go|*.java|.env|.env.*|*.yml|*.yaml|*compose*) ;;
+              *) continue;;
+            esac
+            [ -f "$f" ] || continue
+            bash "$SCANNER" "$f"; rc=$?
+            [ "$rc" -gt "$worst" ] && worst=$rc
+          done
+          if [ "$worst" -eq 2 ]; then
+            echo "::error::HIGH severity InfiniSynapse anti-pattern found"
+            exit 1
+          fi

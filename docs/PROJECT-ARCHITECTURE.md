@@ -7,13 +7,15 @@
 | 层级 | 目录 / 文件 | 作用 |
 | --- | --- | --- |
 | 入口规则 | `AGENTS.md`, `CLAUDE.md`, `llms.txt` | AI 启动后优先读取的导航和通用约束 |
-| 任务 skills | `.agents/skills/`, `.claude/skills/` | 按部署、Server API、CLI、产品模式、浏览器插件分流 |
-| 工具适配 | `.cursor/rules/`, `.github/` | Cursor 和 GitHub Copilot 可读取的规则 |
+| 规范参考 | `docs/reference/api-index.md`, `task-lifecycle.md` | 从上游提炼的端点总目录与 SSE 时序，事实基准 |
+| 任务 skills | `.agents/skills/`（唯一源）, `.claude/skills/`（镜像） | 按部署、Server API、CLI、产品模式、浏览器插件分流 |
+| 可跑参考 | `samples/sdk/`, `samples/templates/` | TS/Python 零依赖 client、runTask、代理、curl 速查 |
+| 实时护栏 | `tools/hooks/` | PostToolUse 扫描器 + fixtures，拦截高风险反模式 |
+| 工具适配 | `.cursor/rules/`, `.github/` | Cursor 和 GitHub Copilot 可读取的规则（fan-out） |
 | 上游文档 | `upstream-docs/` | 官方公开文档和截图的本地快照 |
 | 上游源码 | `upstream-src/` | 预留 `infini_docker` 源码或离线包位置 |
-| 项目文档 | `docs/` | 使用说明、来源审计、速查、后续计划 |
-| 脚本 | `tools/` | 文档同步、项目体检、轻量测试 |
-| 示例 | `samples/templates/` | 服务端 Agent Flow 等可复制骨架 |
+| 项目文档 | `docs/` | 使用说明、来源审计、速查、许可说明、后续计划 |
+| 脚本 | `tools/` | 文档/技能同步、项目体检、回归测试 |
 
 ## 设计原则
 

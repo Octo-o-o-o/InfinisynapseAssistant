@@ -1,35 +1,141 @@
 #!/usr/bin/env bash
-set -euo pipefail
+# test-suite.sh — InfiniSynapse 规则包回归测试。
+# 覆盖：扫描器 fixture 退出码、SDK 离线测试、语法检查、skill 镜像一致、manifest 合法、上游文档关键内容。
+set -u
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+PASS=0; FAIL=0; SKIP=0
+ok()   { printf 'PASS %s\n' "$1"; PASS=$((PASS+1)); }
+bad()  { printf 'FAIL %s\n' "$1" >&2; FAIL=$((FAIL+1)); }
+skip() { printf 'SKIP %s\n' "$1"; SKIP=$((SKIP+1)); }
 
-check() {
-  local description="$1"
-  shift
-  if "$@"; then
-    printf 'PASS %s\n' "$description"
-  else
-    printf 'FAIL %s\n' "$description" >&2
-    exit 1
-  fi
+# ---- 1. 扫描器 fixture 退出码 ----
+SCANNER="tools/hooks/lib/scan-infinisynapse.sh"
+assert_exit() {
+  local file="$1" want="$2"
+  bash "$SCANNER" "$file" >/dev/null 2>&1; local rc=$?
+  if [ "$rc" = "$want" ]; then ok "scan $(basename "$file") exit=$want"; else bad "scan $(basename "$file") exit=$rc want=$want"; fi
 }
-
-check "AGENTS has AUTHING_SERVER_URL rule" grep -q "AUTHING_SERVER_URL" "$ROOT/AGENTS.md"
-check "AGENTS has SSE-before-message rule" grep -q "先建立.*SSE" "$ROOT/AGENTS.md"
-check "Chinese Server docs include SaaS API Key section" grep -q "SaaS API Key" "$ROOT/upstream-docs/infinisynapse-site/zh/markdown/server-api-reference.md"
-check "Chinese Server docs include ai message endpoint" grep -q "/api/ai/message" "$ROOT/upstream-docs/infinisynapse-site/zh/markdown/server-api-reference.md"
-check "Chinese Server docs include task upload endpoint" grep -q "/api/tools/taskUpload" "$ROOT/upstream-docs/infinisynapse-site/zh/markdown/server-api-reference.md"
-check "Chinese Deployment docs include AUTHING_SERVER_URL" grep -q "AUTHING_SERVER_URL" "$ROOT/upstream-docs/infinisynapse-site/zh/markdown/private-deployment-guide.md"
-check "Chinese CLI docs include agent_infini" grep -q "agent_infini" "$ROOT/upstream-docs/infinisynapse-site/zh/markdown/cli-api-reference.md"
-check "Chrome plugin images downloaded" test -s "$ROOT/upstream-docs/infinisynapse-site/assets/chromePluginInstall/14.png"
-check "SaaS API Key screenshot downloaded" test -s "$ROOT/upstream-docs/infinisynapse-site/assets/docs/server-api/api-key-management-entry.png"
-check "Deployment skill exists" test -s "$ROOT/.agents/skills/infinisynapse-deployment/SKILL.md"
-check "Server API skill exists" test -s "$ROOT/.agents/skills/infinisynapse-server-api/SKILL.md"
-check "Product patterns skill exists" test -s "$ROOT/.agents/skills/infinisynapse-product-patterns/SKILL.md"
-
-if grep -R "data:image/svg" "$ROOT/upstream-docs/infinisynapse-site/markdown" "$ROOT/upstream-docs/infinisynapse-site/zh/markdown" >/tmp/infinisynapse-doc-grep.out; then
-  printf 'FAIL markdown still contains inline SVG copy icons\n' >&2
-  exit 1
+assert_contains_rule() {
+  local file="$1" rule="$2"
+  if bash "$SCANNER" "$file" 2>/dev/null | grep -q "$rule"; then ok "scan $(basename "$file") hits $rule"; else bad "scan $(basename "$file") missing $rule"; fi
+}
+if [ -f "$SCANNER" ]; then
+  assert_exit "tools/hooks/test-fixtures/bad-hardcoded-key.ts" 2
+  assert_contains_rule "tools/hooks/test-fixtures/bad-hardcoded-key.ts" "INF-SEC-001"
+  assert_exit "tools/hooks/test-fixtures/bad-frontend-direct.tsx" 2
+  assert_contains_rule "tools/hooks/test-fixtures/bad-frontend-direct.tsx" "INF-SEC-002"
+  assert_exit "tools/hooks/test-fixtures/bad-authing.env" 2
+  assert_contains_rule "tools/hooks/test-fixtures/bad-authing.env" "INF-ENV-001"
+  assert_contains_rule "tools/hooks/test-fixtures/bad-authing.env" "INF-ENV-002"
+  assert_exit "tools/hooks/test-fixtures/bad-newtask-no-sse.ts" 1
+  assert_contains_rule "tools/hooks/test-fixtures/bad-newtask-no-sse.ts" "INF-SSE-001"
+  assert_exit "tools/hooks/test-fixtures/bad-download-as-json.ts" 1
+  assert_exit "tools/hooks/test-fixtures/good-server-proxy.ts" 0
+  assert_exit "tools/hooks/test-fixtures/good-deploy.env" 0
+  # --json 必须合法
+  if bash "$SCANNER" --json "tools/hooks/test-fixtures/bad-authing.env" | python3 -m json.tool >/dev/null 2>&1; then
+    ok "scanner --json 输出合法 JSON"
+  elif command -v python3 >/dev/null 2>&1; then
+    bad "scanner --json 输出非法 JSON"
+  else
+    skip "scanner --json 校验需要 python3"
+  fi
+  # 自检：自家 SDK / 样例不能被误报（exit 0）
+  selfclean=1
+  for f in $(find samples -type f \( -name '*.ts' -o -name '*.tsx' -o -name '*.py' \)); do
+    bash "$SCANNER" "$f" >/dev/null 2>&1 || { selfclean=0; echo "  误报: $f" >&2; }
+  done
+  [ "$selfclean" -eq 1 ] && ok "扫描器不误报自家 samples/" || bad "扫描器误报了 samples/ 下文件"
 else
-  printf 'PASS markdown copy icons removed\n'
+  bad "scanner 不存在: $SCANNER"
 fi
+
+# ---- 2. SDK 离线测试 ----
+if command -v node >/dev/null 2>&1; then
+  NODE_MAJOR="$(node -p 'process.versions.node.split(".").map(Number)[0]')"
+  NODE_MINOR="$(node -p 'process.versions.node.split(".").map(Number)[1]')"
+  if [ "$NODE_MAJOR" -gt 22 ] || { [ "$NODE_MAJOR" -eq 22 ] && [ "$NODE_MINOR" -ge 6 ]; }; then
+    if ( cd samples/sdk/typescript && node --experimental-strip-types --test test/*.test.ts ) >/tmp/inf-ts-test.out 2>&1; then
+      ok "TS SDK 离线 SSE 单测"
+    else
+      bad "TS SDK 离线 SSE 单测 (见 /tmp/inf-ts-test.out)"
+    fi
+    for f in samples/sdk/typescript/src/*.ts; do
+      node --experimental-strip-types --check "$f" >/dev/null 2>&1 && ok "TS 语法 $(basename "$f")" || bad "TS 语法 $(basename "$f")"
+    done
+  else
+    skip "TS SDK 测试需要 Node >= 22.6（当前 $NODE_MAJOR.$NODE_MINOR）"
+  fi
+else
+  skip "TS SDK 测试需要 node"
+fi
+
+if command -v python3 >/dev/null 2>&1; then
+  if ( cd samples/sdk/python && python3 -m unittest test_sse.py ) >/tmp/inf-py-test.out 2>&1; then
+    ok "Python SDK 离线 SSE 单测"
+  else
+    bad "Python SDK 离线 SSE 单测 (见 /tmp/inf-py-test.out)"
+  fi
+  for f in samples/sdk/python/*.py; do
+    python3 -m py_compile "$f" >/dev/null 2>&1 && ok "Python 语法 $(basename "$f")" || bad "Python 语法 $(basename "$f")"
+  done
+else
+  skip "Python SDK 测试需要 python3"
+fi
+
+# ---- 3. skill 镜像一致 ----
+if bash tools/sync-skills.sh --check >/dev/null 2>&1; then
+  ok ".claude/skills 与 .agents/skills 一致"
+else
+  bad ".claude/skills 与 .agents/skills 漂移（运行 bash tools/sync-skills.sh）"
+fi
+
+# ---- 4. manifest 合法且引用的 SKILL.md 都在 ----
+if command -v jq >/dev/null 2>&1; then
+  if jq -e . .agents/skills/manifest.json >/dev/null 2>&1; then
+    ok "manifest.json 合法 JSON"
+    miss=0
+    while IFS= read -r p; do
+      [ -f ".agents/skills/$p" ] || { bad "manifest 引用缺失: $p"; miss=1; }
+    done < <(jq -r '.skills[].path' .agents/skills/manifest.json)
+    [ "$miss" -eq 0 ] && ok "manifest 引用的 SKILL.md 都存在"
+  else
+    bad "manifest.json 非法 JSON"
+  fi
+else
+  skip "manifest 校验需要 jq"
+fi
+
+# ---- 5. 入口文件硬约束在位 ----
+grep -q "AUTHING_SERVER_URL" AGENTS.md && ok "AGENTS 含 AUTHING_SERVER_URL 规则" || bad "AGENTS 缺 AUTHING_SERVER_URL"
+grep -qE "先.*SSE|先连 SSE|先建立.*SSE" AGENTS.md && ok "AGENTS 含先连 SSE 规则" || bad "AGENTS 缺先连 SSE 规则"
+
+# ---- 6. 上游文档关键内容 ----
+ZH="upstream-docs/infinisynapse-site/zh/markdown/server-api-reference.md"
+grep -q "SaaS API Key" "$ZH" && ok "上游文档含 SaaS API Key" || bad "上游文档缺 SaaS API Key"
+grep -q "/api/ai/message" "$ZH" && ok "上游文档含 /api/ai/message" || bad "上游文档缺 /api/ai/message"
+grep -q "/api/tools/taskUpload" "$ZH" && ok "上游文档含 taskUpload" || bad "上游文档缺 taskUpload"
+grep -q "AUTHING_SERVER_URL" "upstream-docs/infinisynapse-site/zh/markdown/private-deployment-guide.md" && ok "部署文档含 AUTHING_SERVER_URL" || bad "部署文档缺 AUTHING_SERVER_URL"
+
+# ---- 7. 参考文档与上游端点对齐（抽样）----
+API_INDEX="docs/reference/api-index.md"
+for ep in "/api/ai/events" "/api/ai/message" "/api/ai_task/getTaskWorkspace" "/api/tools/storage/downloadTaskFile"; do
+  if grep -q "$ep" "$API_INDEX" && grep -q "$ep" "$ZH"; then
+    ok "api-index 与上游均含 $ep"
+  else
+    bad "api-index/上游 端点不一致: $ep"
+  fi
+done
+
+# ---- 8. markdown 不含残留 copy 图标 ----
+if grep -R "data:image/svg" "upstream-docs/infinisynapse-site/markdown" "upstream-docs/infinisynapse-site/zh/markdown" >/dev/null 2>&1; then
+  bad "markdown 仍含内联 SVG copy 图标"
+else
+  ok "markdown copy 图标已清理"
+fi
+
+echo ""
+echo "==== PASS=$PASS FAIL=$FAIL SKIP=$SKIP ===="
+[ "$FAIL" -eq 0 ]

@@ -1,0 +1,28 @@
+{
+  "name": "infinisynapse-sdk-reference",
+  "version": "0.1.0",
+  "description": "Reference TypeScript client for the InfiniSynapse Server API (SSE long-task flow, uploads, workspace artifacts). Zero runtime dependencies.",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "node --experimental-strip-types --test test/*.test.ts",
+    "check": "for f in src/*.ts; do node --experimental-strip-types --check \"$f\"; done",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": ["infinisynapse", "sse", "agent", "sdk", "server-api"],
+  "engines": {
+    "node": ">=22.6"
+  },
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "typescript": "^5.5.0"
+  },
+  "peerDependenciesMeta": {
+    "express": {
+      "optional": true
+    }
+  }
+}

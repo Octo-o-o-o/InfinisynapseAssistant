@@ -11,9 +11,12 @@ alwaysApply: false
 
 # InfiniSynapse Core Rules
 
-- Read `AGENTS.md` before changing InfiniSynapse integration code.
-- Search `upstream-docs/infinisynapse-site/zh/markdown/` before using an endpoint; English docs are supplemental only.
-- Keep API Key server-side.
-- Connect `GET /api/ai/events?connId=` before `POST /api/ai/message`.
+- Read `AGENTS.md` first; locate endpoints in `docs/reference/api-index.md` and the SSE flow in `docs/reference/task-lifecycle.md`.
+- Search `upstream-docs/infinisynapse-site/zh/markdown/` before using an endpoint; English docs are supplemental only. Do not invent endpoints.
+- Keep API Key server-side; never put it in frontend/mobile bundles. Default to a backend proxy route.
+- Connect `GET /api/ai/events?connId=` before `POST /api/ai/message` (newTask).
 - Use workspace APIs for deliverables: `getTaskWorkspace`, `previewFile`, `downloadTaskFile`.
-- For private deployment, check `AUTHING_SERVER_URL` first.
+- Download endpoints return binary streams — do not parse them as `{code,message,data}` JSON.
+- Two upload kinds differ: `/api/ai/upload` (respond to Agent) vs `/api/tools/taskUpload` (proactively archive).
+- For private deployment, check `AUTHING_SERVER_URL` first (var name, browser-reachable, bare `/api`, no trailing slash).
+- Copyable reference clients live in `samples/sdk/`.

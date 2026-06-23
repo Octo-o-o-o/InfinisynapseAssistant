@@ -27,8 +27,10 @@ InfiniSynapse 目前在公开训练语料里覆盖较少，AI 助手很容易在
 - **有任务分流**：`.agents/skills/` 把部署、Server API、CLI、产品模式、浏览器插件拆成独立 skill，AI 会按任务读取更小、更相关的规则。
 - **有强约束规则**：把“API Key 必须在服务端”“先连 SSE 再发任务”“结果要读 workspace”“`AUTHING_SERVER_URL` 不能写错”等高风险点从文档描述提升为默认开发约束。
 - **有产品编排模式**：不仅保存 endpoint，还整理了高考助手、购物比价、报告快写等应用级调用流程，方便从“单接口调用”推进到“可落地产品设计”。
-- **有跨工具 fan-out**：同一套规则同步给 Codex、Claude Code、Cursor、Copilot 和通用 LLM/RAG 使用，避免不同工具读到不同上下文。
-- **有可验证脚本**：`tools/doctor.sh` 和 `tools/test-suite.sh` 会检查关键文档、截图、skills、同步结果是否存在，避免知识库悄悄缺文件。
+- **有可跑的参考 SDK**：`samples/sdk/` 提供零依赖的 TypeScript / Python 客户端（SSE 解析、`runTask` 长任务编排、后端代理、二进制下载、两类上传），并带离线单测，AI 可以直接复制而不必现写易错的 SSE/代理。
+- **有实时护栏**：`tools/hooks/` 的扫描器在每次 Edit/Write 后自动检查「API Key 进前端、SSE 顺序、二进制当 JSON、`AUTHING_SERVER_URL` 写错」等高风险点，命中高危会当场反馈（规则 `INF-SEC/SSE/DL/ENV`）。
+- **有跨工具 fan-out**：同一套规则同步给 Codex、Claude Code、Cursor、Copilot 和通用 LLM/RAG 使用；`.claude/skills/` 由 `.agents/skills/` 单向镜像，`tools/sync-skills.sh --check` 防漂移。
+- **有真回归测试**：`tools/test-suite.sh` 断言扫描器 fixtures 退出码、跑 SDK 离线单测、校验 skill 镜像一致和 api-index 与上游端点对齐，改规则会被测出退化。
 - **有同步机制**：`tools/sync-upstream-docs.sh` 可以重新抓取 zh/en 两套官方文档和截图，方便后续跟进官网更新。
 - **有来源审计**：`docs/SOURCE-AUDIT.md` 记录哪些上游可用、哪些不可用，例如当前 `infini_docker` GitHub 仓库返回 404。
 
@@ -55,16 +57,23 @@ InfiniSynapse 目前在公开训练语料里覆盖较少，AI 助手很容易在
 
 ```text
 .
-├── AGENTS.md                         # 跨工具通用规范入口
-├── CLAUDE.md                         # Claude Code 入口
+├── AGENTS.md                         # 跨工具通用规范入口（单一真源）
+├── CLAUDE.md                         # Claude Code 入口 + 硬约束速览
 ├── llms.txt                          # 给任意 LLM 的项目导航
-├── .agents/skills/                   # Codex 项目级 skills
-├── .claude/skills/                   # Claude Code skills 镜像
-├── .cursor/rules/                    # Cursor 规则
-├── .github/                          # Copilot 指令
-├── docs/                             # 使用说明、审计、计划、速查
-├── samples/templates/                # 可复制的业务集成骨架
-├── tools/                            # 同步、体检、测试脚本
+├── docs/
+│   ├── reference/                    # api-index.md（端点总目录）+ task-lifecycle.md（SSE 时序）
+│   └── ...                           # 使用说明、审计、计划、速查、许可说明
+├── samples/
+│   ├── sdk/typescript/               # 零依赖 TS client + SSE 解析 + runTask + 代理 + 离线单测
+│   ├── sdk/python/                   # 标准库 Python client + 离线单测
+│   └── templates/                    # curl 速查、后端 Agent Flow 骨架
+├── tools/
+│   ├── hooks/                        # PostToolUse 扫描器 + fixtures + 复用示例
+│   ├── sync-skills.sh                # .agents/skills → .claude/skills 镜像
+│   ├── doctor.sh / test-suite.sh / sync-upstream-docs.sh
+├── .agents/skills/                   # skills 唯一源（Codex）
+├── .claude/skills/                   # skills 镜像（Claude Code）+ settings.json 接线钩子
+├── .cursor/rules/  .github/          # Cursor / Copilot fan-out
 ├── upstream-docs/infinisynapse-site/ # 官方文档本地镜像
 └── upstream-src/                     # 预留上游源码 / 离线包位置
 ```
@@ -94,11 +103,17 @@ InfiniSynapse 目前在公开训练语料里覆盖较少，AI 助手很容易在
 ## 快速开始
 
 ```bash
-# 体检当前规则包、上游快照和工具
+# 体检当前规则包、上游快照、SDK、钩子和镜像一致性
 bash tools/doctor.sh
 
-# 跑轻量一致性测试
+# 跑回归：扫描器 fixtures + SDK 离线单测 + skill 镜像一致 + 文档对齐
 npm test
+
+# 手动扫描某个文件的 InfiniSynapse 反模式
+npm run scan -- path/to/file.ts
+
+# 改了 skill 后把唯一源镜像到 Claude
+bash tools/sync-skills.sh
 
 # 同步最新公开文档，包含 zh/en 两套和截图资源
 bash tools/sync-upstream-docs.sh
@@ -107,8 +122,8 @@ bash tools/sync-upstream-docs.sh
 当前验证状态：
 
 ```text
-npm test: PASS
-bash tools/doctor.sh: PASS, with expected WARN for missing upstream-src/infini_docker
+npm test: PASS（37 项，0 失败）
+bash tools/doctor.sh: PASS，仅 upstream-src/infini_docker 缺失为预期 WARN
 ```
 
 `infini_docker` 上游源码仓库当前不可 clone，详见 `docs/SOURCE-AUDIT.md`。
@@ -259,8 +274,9 @@ git clone https://github.com/chaozwn/infini_docker.git upstream-src/infini_docke
 
 ## 当前限制
 
-- 还没有基于真实私有化部署的 contract tests。
-- 还没有 Node.js / Python SDK 封装，只沉淀了 API 规则和调用流程。
+- SDK 是**参考实现**，不连真实 API；离线只能验证 SSE 解析、语法和调用契约，端到端要自己拿 Key 跑。
+- 还没有基于真实私有化部署 / 真实 Key 的 contract tests。
+- 扫描器是 grep 级启发式：高精度但非语义分析，跨文件的 SSE 顺序（A 文件连 SSE、B 文件发任务）不会判为违规。
 - `upstream-src/infini_docker/` 尚未补齐，因为官方 GitHub 仓库当前返回 404。
 
 ## 许可证

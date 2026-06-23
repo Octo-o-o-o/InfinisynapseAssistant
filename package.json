@@ -1,10 +1,12 @@
 {
   "name": "infinisynapse-ai-workspace",
-  "version": "0.1.0",
-  "description": "Local AI rule pack and upstream documentation mirror for building products on InfiniSynapse.",
+  "version": "0.2.0",
+  "description": "Local AI rule pack, reference SDK, and guardrail scanner for building products on InfiniSynapse.",
   "scripts": {
     "doctor": "bash tools/doctor.sh",
     "sync:docs": "bash tools/sync-upstream-docs.sh",
+    "sync:skills": "bash tools/sync-skills.sh",
+    "scan": "bash tools/hooks/lib/scan-infinisynapse.sh",
     "test": "bash tools/test-suite.sh"
   },
   "keywords": [

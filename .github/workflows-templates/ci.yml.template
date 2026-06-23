@@ -1,0 +1,23 @@
+# InfiniSynapse 规则包 CI 模板。
+# 启用：复制到 .github/workflows/ci.yml
+# 跑 doctor + 回归测试（含扫描器 fixtures、SDK 离线单测、skill 镜像一致）。
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: doctor
+        run: bash tools/doctor.sh
+      - name: test-suite
+        run: npm test
+      - name: skill mirror in sync
+        run: bash tools/sync-skills.sh --check

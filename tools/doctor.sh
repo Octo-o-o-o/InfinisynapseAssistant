@@ -32,6 +32,44 @@ require_file "upstream-docs/infinisynapse-site/assets/docs/server-api/api-key-ma
 require_file "upstream-docs/infinisynapse-site/assets/docs/server-api/api-key-management-page.png"
 require_file "upstream-docs/infinisynapse-site/assets/docs/server-api/compute-resource-selector.png"
 
+# 规范参考
+require_file "docs/reference/api-index.md"
+require_file "docs/reference/task-lifecycle.md"
+
+# 钩子与扫描器
+require_file "tools/hooks/post-edit.sh"
+require_file "tools/hooks/lib/scan-infinisynapse.sh"
+require_file "tools/hooks/lib/parse-hook-input.sh"
+require_file ".claude/settings.json"
+
+# SDK 参考实现
+require_file "samples/sdk/typescript/src/client.ts"
+require_file "samples/sdk/typescript/src/sse.ts"
+require_file "samples/sdk/python/infinisynapse_client.py"
+
+# skill 源与镜像
+require_file ".agents/skills/manifest.json"
+require_file "tools/sync-skills.sh"
+
+# 扫描器自检：good fixture 必须干净，bad fixture 必须触发
+if bash "$ROOT/tools/hooks/lib/scan-infinisynapse.sh" "$ROOT/tools/hooks/test-fixtures/good-server-proxy.ts" >/dev/null 2>&1; then
+  pass "scanner clean on good fixture"
+else
+  fail "scanner flagged a good fixture"
+fi
+if bash "$ROOT/tools/hooks/lib/scan-infinisynapse.sh" "$ROOT/tools/hooks/test-fixtures/bad-hardcoded-key.ts" >/dev/null 2>&1; then
+  fail "scanner did not flag a bad fixture"
+else
+  pass "scanner flags bad fixture"
+fi
+
+# skill 镜像一致
+if bash "$ROOT/tools/sync-skills.sh" --check >/dev/null 2>&1; then
+  pass ".claude/skills mirror in sync"
+else
+  warn ".claude/skills drift; run bash tools/sync-skills.sh"
+fi
+
 if command -v curl >/dev/null 2>&1; then
   pass "curl available"
 else

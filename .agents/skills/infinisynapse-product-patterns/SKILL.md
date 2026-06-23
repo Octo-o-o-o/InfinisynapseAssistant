@@ -13,7 +13,9 @@ description: |
 先读:
 
 - `upstream-docs/infinisynapse-site/zh/markdown/server-api-reference.md` 第 10 节
+- `docs/reference/task-lifecycle.md`（含三类产品与 API 的对应表）
 - `.agents/skills/infinisynapse-server-api/SKILL.md`
+- 可复制骨架: `samples/sdk/`、`samples/templates/`
 
 ## 架构默认值
 

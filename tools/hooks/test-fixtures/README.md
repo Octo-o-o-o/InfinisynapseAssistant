@@ -1,0 +1,17 @@
+# 扫描器测试 fixtures
+
+`tools/test-suite.sh` 用这些样本断言 `lib/scan-infinisynapse.sh` 的退出码，防止正则调整时悄悄退化。
+
+| fixture | 期望 exit | 命中规则 |
+| --- | --- | --- |
+| `bad-hardcoded-key.ts` | 2 | INF-SEC-001（硬编码 Bearer） |
+| `bad-frontend-direct.tsx` | 2 | INF-SEC-002（前端直连）+ INF-SSE-001 |
+| `bad-authing.env` | 2 | INF-ENV-001/002/003 |
+| `bad-newtask-no-sse.ts` | 1 | INF-SSE-001（newTask 未先连 SSE） |
+| `bad-download-as-json.ts` | 1 | INF-DL-001（下载当 JSON） |
+| `good-server-proxy.ts` | 0 | 干净（后端代理 + 先连 SSE） |
+| `good-deploy.env` | 0 | 干净（AUTHING_SERVER_URL 正确） |
+
+退出码语义：`2`=存在 HIGH（应阻塞），`1`=仅 MEDIUM/LOW（提醒），`0`=干净。
+
+新增规则时，至少加一个对应 fixture（一个触发、必要时一个不触发的对照）。

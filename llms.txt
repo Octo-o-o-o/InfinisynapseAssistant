@@ -1,39 +1,60 @@
 # InfiniSynapse AI Workspace
 
-This workspace is a local rule pack for AI assistants building products on top of InfiniSynapse.
+本地规则包：让 AI 助手稳定、按正确顺序、带安全边界地基于 InfiniSynapse 开发产品。
+不是 InfiniSynapse 本体，也不是业务模板，而是文档 + 规则 + 可跑 SDK + 实时护栏。
 
-## Core files
+## 阅读顺序
 
-- AGENTS.md: primary cross-tool rules.
-- CLAUDE.md: Claude Code entry.
-- README.md: project overview.
-- docs/USAGE-GUIDE.md: how to use the workspace.
-- docs/SOURCE-AUDIT.md: upstream source availability and fetch attempts.
-- docs/QUICK-REFERENCE.md: high-signal endpoint and deployment notes.
+1. AGENTS.md — 跨工具单一通用入口与硬约束
+2. docs/reference/api-index.md — 端点总目录（事实基准）
+3. docs/reference/task-lifecycle.md — SSE 事件 / 消息类型 / 长任务时序 / 恢复
+4. 任务对应的 skill（见下）
 
-## Upstream docs
+## 七条硬约束
 
-- upstream-docs/infinisynapse-site/zh/markdown/private-deployment-guide.md
-- upstream-docs/infinisynapse-site/zh/markdown/server-api-reference.md
-- upstream-docs/infinisynapse-site/zh/markdown/cli-api-reference.md
-- upstream-docs/infinisynapse-site/zh/markdown/chrome-plugin-install.md
-- upstream-docs/infinisynapse-site/markdown/private-deployment-guide.md
-- upstream-docs/infinisynapse-site/markdown/server-api-reference.md
-- upstream-docs/infinisynapse-site/markdown/cli-api-reference.md
-- upstream-docs/infinisynapse-site/markdown/chrome-plugin-install.md
-- upstream-docs/infinisynapse-site/html/
-- upstream-docs/infinisynapse-site/assets/
+- API Key 只在服务端，产品走后端代理架构。
+- 先 GET /api/ai/events 连 SSE，再 POST /api/ai/message 发 newTask。
+- 产物用 getTaskWorkspace / previewFile / downloadTaskFile，别只读最后一条文本。
+- 下载端点返回二进制，不要按 {code,message,data} 解析。
+- 两类上传分清：/api/ai/upload（响应 Agent）vs /api/tools/taskUpload（主动归档）。
+- 不编造端点，先 rg 搜 upstream-docs/infinisynapse-site/zh/markdown/。
+- 私有化部署 AUTHING_SERVER_URL：正确变量名 + 浏览器可达 + 裸 /api + 无尾斜杠。
 
-## Skills
+## Skills（唯一源 .agents/skills/，镜像 .claude/skills/）
 
-- .agents/skills/infinisynapse-deployment/SKILL.md
-- .agents/skills/infinisynapse-server-api/SKILL.md
-- .agents/skills/infinisynapse-cli/SKILL.md
-- .agents/skills/infinisynapse-product-patterns/SKILL.md
-- .agents/skills/infinisynapse-browser-extension/SKILL.md
+- infinisynapse-server-api — SDK / 后端 route / SSE / 任务 / 数据源 / RAG / 上传下载
+- infinisynapse-product-patterns — 高考助手 / 购物比价 / 报告快写等任务型产品编排
+- infinisynapse-deployment — 私有化部署 / Docker Compose / .env / 登录失败 / OOM
+- infinisynapse-cli — agent_infini CLI 映射与排查
+- infinisynapse-browser-extension — Browser Use / Chrome 插件 / 网页自动化
 
-## Tooling
+## 可跑 SDK 与样例
 
-- tools/sync-upstream-docs.sh: fetch official public docs and convert them to Markdown.
-- tools/doctor.sh: check local workspace health and upstream source availability.
-- tools/test-suite.sh: lightweight consistency tests.
+- samples/sdk/typescript/ — 零依赖 client + 纯函数 SSE 解析 + runTask + Express 代理 + 离线单测
+- samples/sdk/python/ — 标准库 client + SSE 解析 + run_task + 离线单测
+- samples/templates/curl-quickstart.md — 纯 curl 跑通一次长任务
+- samples/templates/server-side-agent-flow.md — 后端代理字段与时序
+
+## 实时护栏
+
+- tools/hooks/lib/scan-infinisynapse.sh — 反模式扫描器（INF-SEC/SSE/DL/ENV 规则）
+- tools/hooks/post-edit.sh + .claude/settings.json — Claude Code PostToolUse 钩子
+- npm run scan -- <file> — 手动扫描
+
+## 上游文档快照
+
+- upstream-docs/infinisynapse-site/zh/markdown/ — 中文 SaaS 文档（优先）
+- upstream-docs/infinisynapse-site/markdown/ — 英文补充
+- upstream-docs/infinisynapse-site/assets/ — 截图
+
+## 工具
+
+- tools/doctor.sh — 体检规则包与上游快照
+- tools/test-suite.sh（npm test）— 回归：扫描器 fixtures + SDK 单测 + 镜像一致 + 文档对齐
+- tools/sync-skills.sh — .agents/skills → .claude/skills 镜像
+- tools/sync-upstream-docs.sh — 重新抓取官方公开文档
+
+## 来源与许可
+
+- docs/SOURCE-AUDIT.md — 上游可用性审计（infini_docker 当前 404）
+- docs/LICENSE-NOTES.md — 上游快照为第三方版权，本仓库未声明 OSS 许可

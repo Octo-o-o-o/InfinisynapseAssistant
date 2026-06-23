@@ -12,9 +12,12 @@ description: |
 
 先读:
 
-- `upstream-docs/infinisynapse-site/zh/markdown/server-api-reference.md`
+- `docs/reference/api-index.md`（端点总目录）+ `docs/reference/task-lifecycle.md`（SSE/任务时序）— 先定位
+- `upstream-docs/infinisynapse-site/zh/markdown/server-api-reference.md` — 详细原文
 - `upstream-docs/infinisynapse-site/markdown/server-api-reference.md` 作为英文补充参考
 - `docs/QUICK-REFERENCE.md`
+
+可复制的参考实现: `samples/sdk/typescript/`、`samples/sdk/python/`、`samples/templates/curl-quickstart.md`。
 
 ## 基本约束
 

@@ -7,3 +7,10 @@ node_modules/
 tmp/
 dist/
 
+# 钩子扫描结果（每次运行覆盖，不入库）
+.claude/.infinisynapse-last-scan.txt
+
+# Python / 测试产生的缓存
+__pycache__/
+*.pyc
+
