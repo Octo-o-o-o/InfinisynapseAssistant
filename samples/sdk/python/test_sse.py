@@ -1,7 +1,10 @@
 """离线 SSE 解析器单测，不触网。运行：python3 -m unittest test_sse.py"""
 import unittest
 
-from infinisynapse_client import SseParser, parse_sse_data, is_completion, TextAccumulator
+from infinisynapse_client import (
+    SseParser, parse_sse_data, is_completion, TextAccumulator,
+    next_backoff_seconds, select_missed_messages,
+)
 
 
 def collect(chunks):
@@ -83,6 +86,22 @@ class TestAccumulator(unittest.TestCase):
         a.add("x", None)
         a.add("y", None)
         self.assertEqual(a.text(), "xy")
+
+
+class TestReconnect(unittest.TestCase):
+    def test_backoff_exponential_capped(self):
+        self.assertEqual(next_backoff_seconds(0, 0.5, 10), 0.0)
+        self.assertEqual(next_backoff_seconds(1, 0.5, 10), 0.5)
+        self.assertEqual(next_backoff_seconds(2, 0.5, 10), 1.0)
+        self.assertEqual(next_backoff_seconds(3, 0.5, 10), 2.0)
+        self.assertEqual(next_backoff_seconds(10, 0.5, 10), 10)  # 封顶
+
+    def test_select_missed_shapes_and_filter(self):
+        msgs = [{"ts": 3, "text": "c"}, {"ts": 1, "text": "a"}, {"ts": 2, "text": "b"}]
+        self.assertEqual([m["ts"] for m in select_missed_messages(msgs, set())], [1, 2, 3])
+        self.assertEqual([m["ts"] for m in select_missed_messages({"messages": msgs}, {1})], [2, 3])
+        self.assertEqual(select_missed_messages({"data": {"messages": msgs}}, {1, 2, 3}), [])
+        self.assertEqual(select_missed_messages(None, set()), [])
 
 
 if __name__ == "__main__":

@@ -36,7 +36,8 @@ python3 -m py_compile *.py           # 语法检查
 ## 说明
 
 - 严格「先连 SSE 再发 newTask」：`run_task` 先 `open_events_response()`（立即 urlopen 建连），再 `new_task`，最后读流——不是惰性生成器。
-- 防永久阻塞：`run_task(max_seconds=600, read_timeout=60)`，无事件时定期检查死线后退出。
+- **SSE 重连（默认开启）**：流断开/心跳超时后指数退避重连，`getUiMessageById` 断点续传补回错过消息；`run_task(reconnect=True, max_retries=5, base_delay=0.5, max_delay=10, heartbeat_timeout=30)`，`result.reconnects` 记次数。`reconnect=False` 时断开即判错。
+- 防永久阻塞：`run_task(max_seconds=600, read_timeout=5)`，无事件时定期检查死线后退出。
 - 流式文本按消息 `ts` 累积（同 ts 覆盖），避免服务端发累积快照时重复拼接。
 - 支持两类上传：`upload_to_sandbox`（响应 Agent）/ `task_upload`（主动归档）；`run_task` 可传 `on_upload_request(message) -> (data, filename) | None` 自动应答 `upload_file_to_sandbox`。
 - 下载端点返回二进制（`download_task_file` 返回 `bytes`），不要当 JSON。

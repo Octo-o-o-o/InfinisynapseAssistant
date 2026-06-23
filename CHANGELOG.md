@@ -3,6 +3,18 @@
 本项目变更记录，遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 版本对应规则包成熟度，不对应 InfiniSynapse 官方版本。
 
+## [0.3.0] - 2026-06-23
+
+SSE 重连完整实现，并修复 SDK 在 Node strip-types 下无法 import 的可移植性 bug。
+
+### Added
+- **SSE 重连（TS + Python，默认开启）**：指数退避（`nextBackoffMs`/`next_backoff_seconds`，封顶）+ 心跳看门狗（`heartbeatTimeoutMs` 内无任何事件即重连）+ `getUiMessageById` 断点续传（`selectMissedMessages` 按 ts 去重补回错过消息）。`runTask` 结果新增 `reconnects` 计数；`reconnect: { enabled: false }` 可关闭。
+- TS `src/reconnect.ts` 纯函数 + `test/reconnect.test.ts`：3 项纯函数测试 + 4 项用 fake-client 真实走"断开→重连→完成 / catch-up 补回 / 关闭重连即判错"的离线集成测试。
+- Python `next_backoff_seconds` / `select_missed_messages` + 单测。
+
+### Fixed
+- **可移植性（高危）** `InfiniSynapseError` 用了 TS 构造函数参数属性（`readonly opts`），Node `--experimental-strip-types` strip-only 模式不支持，导致 `client.ts` 及整条依赖链**实际无法被 import**（之前只做了 `--check` 语法检查，没 import 过 client，未暴露）。改为显式字段赋值。重连集成测试 import 全链路时发现。
+
 ## [0.2.1] - 2026-06-23
 
 提交后完整复查发现并修复参考 SDK 的真实正确性问题（独立审查 + 自检）。

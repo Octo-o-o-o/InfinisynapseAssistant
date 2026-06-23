@@ -6,9 +6,10 @@
 ## 阅读顺序
 
 1. AGENTS.md — 跨工具单一通用入口与硬约束
-2. docs/reference/api-index.md — 端点总目录（事实基准）
-3. docs/reference/task-lifecycle.md — SSE 事件 / 消息类型 / 长任务时序 / 恢复
-4. 任务对应的 skill（见下）
+2. docs/CONTENT-MODEL.md — 内容类型、维护边界、RAG/文件放置规则
+3. docs/reference/api-index.md — 端点总目录（事实基准）
+4. docs/reference/task-lifecycle.md — SSE 事件 / 消息类型 / 长任务时序 / 恢复
+5. 任务对应的 skill（见下）
 
 ## 七条硬约束
 

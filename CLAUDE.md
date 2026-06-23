@@ -2,6 +2,15 @@
 
 通用规范以 `AGENTS.md` 为准（冲突时以 AGENTS.md 优先）。本文件补充 Claude Code 专属入口与硬约束速览。
 
+## 内容定位
+
+本仓库按两个维度维护内容：
+
+- AI 友好 / 人类友好。
+- 官方文档内容 / 特定用法内容。
+
+Claude 写规则或方案时，先判断内容属于哪类：官方事实放 `upstream-docs/` 或 `docs/reference/`；核心场景里的默认选择、顺序、风险边界才写入 skills、quick reference、templates 或 proposals。完整模型见 `docs/CONTENT-MODEL.md`。
+
 ## 0. 硬约束速览（最高优先级）
 
 写 InfiniSynapse 相关代码/配置时默认遵守，违反这些是高风险：
@@ -11,14 +20,16 @@
 - **产物读工作区**：完成后用 `getTaskWorkspace` / `previewFile` / `downloadTaskFile`，不要只读最后一条文本。
 - **下载是二进制**：`downloadTaskFile` / `downloadZip` / `storage/download` 返回流，不要按 `{code,message,data}` 解析。
 - **区分两类上传**：`/api/ai/upload`（响应 Agent）vs `/api/tools/taskUpload`（主动归档）。
+- **RAG 文件别放本机路径**：短期资料放 `task workspace/upload_documents`；长期 RAG 资料放 InfiniSynapse 可访问的 RAG `docDir` 或 OSS/S3。SaaS 不能读取本机 `/Users/...`。
 - **不编造端点**：不在 `docs/reference/api-index.md` 或上游文档里的端点，先 `rg` 搜 `upstream-docs/infinisynapse-site/zh/markdown/`。
 - **私有化部署**：`AUTHING_SERVER_URL` 变量名/浏览器可达/裸 `/api`/无尾斜杠 四条都要满足。
 
 ## 启动后先读
 
 1. `AGENTS.md`
-2. `docs/reference/api-index.md` + `docs/reference/task-lifecycle.md`（定位端点与时序）
-3. 用户任务对应的 `.claude/skills/*/SKILL.md`
+2. `docs/CONTENT-MODEL.md`（判断内容应放在官方事实还是特定用法）
+3. `docs/reference/api-index.md` + `docs/reference/task-lifecycle.md`（定位端点与时序）
+4. 用户任务对应的 `.claude/skills/*/SKILL.md`
 
 ## Skills
 
@@ -48,5 +59,6 @@
 - 回答 InfiniSynapse API 相关问题前，先 `rg` 搜 `upstream-docs/infinisynapse-site/zh/markdown/`，英文快照只作补充。
 - 写产品集成方案时，默认采用后端代理 API Key 的架构。
 - 写长任务代码时，默认先连 SSE，再发 `newTask`。
+- 写 RAG / 文件方案时，必须区分 task workspace、sandbox、RAG `docDir`、OSS/S3、数据源上传，不能把 SaaS RAG 写成本机目录。
 - 写私有化部署说明时，必须检查 `AUTHING_SERVER_URL` 的四条规则。
 - 改完跑 `bash tools/doctor.sh` 和 `npm test`；改了 skill 跑 `bash tools/sync-skills.sh`。

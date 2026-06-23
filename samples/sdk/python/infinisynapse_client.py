@@ -304,6 +304,7 @@ class RunTaskResult:
     final_text: str = ""
     workspace: Any = None
     status: str = "completed"
+    reconnects: int = 0
     error: Optional[str] = None
 
 
@@ -311,69 +312,138 @@ def is_completion(message: dict) -> bool:
     return message.get("say") == "completion_result" or message.get("ask") == "completion_result"
 
 
+def next_backoff_seconds(attempt: int, base: float = 0.5, max_delay: float = 10.0) -> float:
+    """指数退避（封顶），确定性，便于测试。"""
+    if attempt <= 0:
+        return 0.0
+    return min(max_delay, base * (2 ** (attempt - 1)))
+
+
+def select_missed_messages(ui: Any, seen_ts: set) -> list:
+    """从 get_ui_message_by_id 各种形状里挑出 ts 尚未见过的消息，按 ts 升序（断点续传）。"""
+    msgs = ui if isinstance(ui, list) else None
+    if msgs is None and isinstance(ui, dict):
+        msgs = ui.get("messages") or ui.get("uiMessages")
+        if not isinstance(msgs, list) and isinstance(ui.get("data"), dict):
+            msgs = ui["data"].get("messages")
+    if not isinstance(msgs, list):
+        return []
+    out = [m for m in msgs if isinstance(m, dict) and isinstance(m.get("ts"), int) and m["ts"] not in seen_ts]
+    return sorted(out, key=lambda m: m["ts"])
+
+
 def run_task(client: InfiniSynapseClient, text: str, *, task_id: str | None = None,
              on_text: Callable[[str], None] | None = None,
              on_upload_request: "Callable[[dict], Optional[tuple[bytes, str]]] | None" = None,
-             max_seconds: float = 600.0, read_timeout: float = 60.0) -> RunTaskResult:
-    """同步驱动一个完整长任务（教学版：单线程，严格"先连 SSE 再发 newTask"）。
+             max_seconds: float = 600.0, read_timeout: float = 5.0,
+             reconnect: bool = True, max_retries: int = 5,
+             base_delay: float = 0.5, max_delay: float = 10.0,
+             heartbeat_timeout: float = 30.0) -> RunTaskResult:
+    """同步驱动一个完整长任务，内置 SSE 重连（退避 + 心跳 + getUiMessageById 断点续传）。
 
-    on_upload_request(message) 在 Agent 请求 upload_file_to_sandbox 时调用，
-    返回 (data, filename) 则上传并回传；返回 None 则回传空结果。
-    max_seconds 是整体兜底；read_timeout 让无事件时也能定期检查死线，避免永久阻塞。
+    严格"先连 SSE 再发 newTask"。reconnect=False 时流断开即判错。
+    on_upload_request(message) -> (data, filename) | None 用于应答 upload_file_to_sandbox。
     """
     conn_id = str(uuid.uuid4())
     task_id = task_id or str(uuid.uuid4())
-
-    # 1. 先建立 SSE 连接（urlopen 立即建连，不是惰性生成器）
-    resp = client.open_events_response(conn_id, read_timeout=read_timeout)
     result = RunTaskResult(task_id=task_id, conn_id=conn_id)
     acc = TextAccumulator()
-    handled_asks: set[int] = set()
-    try:
-        # 2. 再发任务
-        client.new_task(text, conn_id=conn_id, task_id=task_id)
-        # 3. 读流，带死线兜底
-        parser = SseParser()
-        deadline = time.monotonic() + max_seconds
-        done = False
-        while not done and time.monotonic() < deadline:
-            try:
-                raw = resp.readline()
-            except (socket.timeout, TimeoutError):
-                continue  # 无数据，回去检查死线
-            if not raw:
-                break  # 流结束
-            for ev in parser.push(raw.decode(errors="replace")):
-                name, data = ev.get("event"), ev.get("data")
-                if name == "notification" and isinstance(data, dict) and data.get("type") == "error":
-                    result.status = "error"
-                    result.error = data.get("message") or data.get("title")
-                    done = True
-                    break
-                if name in ("message.add", "message.partial") and isinstance(data, dict):
-                    msg = data.get("message") or {}
-                    txt = msg.get("text")
-                    if txt:
-                        acc.add(txt, msg.get("ts"))
-                        if on_text:
-                            on_text(txt)
-                    if msg.get("type") == "ask" and msg.get("ask") == "upload_file_to_sandbox":
-                        ts = msg.get("ts")
-                        if ts not in handled_asks:  # 同一请求只处理一次
-                            handled_asks.add(ts)
-                            _handle_upload(client, task_id, conn_id, msg, on_upload_request)
-                    if is_completion(msg):
-                        done = True
-                        break
-        else:
-            if not done:
-                result.status = "error"
-                result.error = f"timed out after {max_seconds}s"
-    finally:
+    handled_asks: set = set()
+    seen_ts: set = set()
+    state = {"done": False, "task_sent": False, "attempt": 0}
+
+    def handle_message(msg: dict) -> None:
+        ts = msg.get("ts")
+        if isinstance(ts, int):
+            seen_ts.add(ts)
+        txt = msg.get("text")
+        if txt:
+            acc.add(txt, ts if isinstance(ts, int) else None)
+            if on_text:
+                on_text(txt)
+        if msg.get("type") == "ask" and msg.get("ask") == "upload_file_to_sandbox":
+            if ts not in handled_asks:
+                handled_asks.add(ts)
+                _handle_upload(client, task_id, conn_id, msg, on_upload_request)
+        if is_completion(msg):
+            state["done"] = True
+
+    overall_deadline = time.monotonic() + max_seconds
+    while not state["done"] and time.monotonic() < overall_deadline:
         try:
-            resp.close()
+            resp = client.open_events_response(conn_id, read_timeout=read_timeout)
         except Exception:
+            resp = None
+        if resp is not None:
+            try:
+                if not state["task_sent"]:
+                    state["task_sent"] = True
+                    try:
+                        client.new_task(text, conn_id=conn_id, task_id=task_id)
+                    except InfiniSynapseError as e:
+                        result.status = "error"
+                        result.error = f"newTask failed: {e}"
+                        state["done"] = True
+                        break
+                parser = SseParser()
+                last_event = time.monotonic()
+                while not state["done"] and time.monotonic() < overall_deadline:
+                    try:
+                        raw = resp.readline()
+                    except (socket.timeout, TimeoutError):
+                        if time.monotonic() - last_event > heartbeat_timeout:
+                            break  # 心跳超时 → 重连
+                        continue
+                    if not raw:
+                        break  # 流结束
+                    last_event = time.monotonic()
+                    state["attempt"] = 0  # 有事件 → 清零失败计数
+                    for ev in parser.push(raw.decode(errors="replace")):
+                        name, data = ev.get("event"), ev.get("data")
+                        if name == "notification" and isinstance(data, dict) and data.get("type") == "error":
+                            result.status = "error"
+                            result.error = data.get("message") or data.get("title")
+                            state["done"] = True
+                            break
+                        if name in ("message.add", "message.partial") and isinstance(data, dict):
+                            handle_message(data.get("message") or {})
+                            if state["done"]:
+                                break
+            except Exception as e:
+                if not result.error:
+                    result.error = str(e)
+            finally:
+                try:
+                    resp.close()
+                except Exception:
+                    pass
+
+        if state["done"]:
+            break
+        if not reconnect:
+            result.status = "error"
+            result.error = result.error or "SSE stream ended before completion (reconnect disabled)"
+            break
+        state["attempt"] += 1
+        if state["attempt"] > max_retries:
+            result.status = "error"
+            result.error = result.error or f"SSE reconnect exhausted after {max_retries} retries"
+            break
+        result.reconnects += 1
+        time.sleep(next_backoff_seconds(state["attempt"], base_delay, max_delay))
+        # 断点续传：补回断线期间错过的消息
+        try:
+            ui = client.get_ui_message_by_id(task_id)
+            for m in select_missed_messages(ui, seen_ts):
+                handle_message(m)
+                if state["done"]:
+                    break
+        except InfiniSynapseError:
             pass
+    else:
+        if not state["done"] and result.status == "completed":
+            result.status = "error"
+            result.error = result.error or f"timed out after {max_seconds}s"
 
     result.final_text = acc.text()
     if result.status == "completed":

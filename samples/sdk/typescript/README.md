@@ -37,7 +37,26 @@ for (const f of result.workspace?.files ?? []) {
 }
 ```
 
-`runTask` 自动处理：生成 `connId`/`taskId`、等 `state.ready`（带超时兜底）、累积文本、`upload_file_to_sandbox` 回调、`completion_result` 完成判定、`notification.type=error` 失败、完成后读 `getTaskWorkspace`。
+`runTask` 自动处理：生成 `connId`/`taskId`、先连 SSE 再发 `newTask`、按 `ts` 累积文本（避免快照重复拼接）、`upload_file_to_sandbox` 回调（按 ts 去重）、`completion_result` 完成判定、`notification.type=error` 失败、完成后读 `getTaskWorkspace`。
+
+### SSE 重连（默认开启）
+
+长任务连接可能中途断开。`runTask` 内置重连：
+
+- **指数退避**：`baseDelayMs * 2^(n-1)`，封顶 `maxDelayMs`，连续失败超过 `maxRetries` 才放弃。
+- **心跳看门狗**：`heartbeatTimeoutMs` 内没有任何事件（含 heartbeat）就判定连接死亡并重连。
+- **断点续传**：重连后用 `getUiMessageById` 补回断线期间错过的消息（按 `ts` 去重）。
+- 收到任意事件会把失败计数清零；`result.reconnects` 记录重连次数。
+
+```ts
+const result = await runTask(client, {
+  text,
+  reconnect: { maxRetries: 5, baseDelayMs: 500, maxDelayMs: 10000, heartbeatTimeoutMs: 30000 },
+});
+// 关闭重连：reconnect: { enabled: false }
+```
+
+纯函数 `nextBackoffMs` / `selectMissedMessages` 可离线测试（见 `test/reconnect.test.ts`，含 fake-client 真实走一遍断开→重连→完成）。
 
 ## 直接用底层 client
 

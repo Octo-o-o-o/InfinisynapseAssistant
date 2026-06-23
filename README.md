@@ -61,6 +61,7 @@ InfiniSynapse 目前在公开训练语料里覆盖较少，AI 助手很容易在
 ├── CLAUDE.md                         # Claude Code 入口 + 硬约束速览
 ├── llms.txt                          # 给任意 LLM 的项目导航
 ├── docs/
+│   ├── CONTENT-MODEL.md              # AI/人类友好 × 官方/特定用法的内容维护模型
 │   ├── reference/                    # api-index.md（端点总目录）+ task-lifecycle.md（SSE 时序）
 │   └── ...                           # 使用说明、审计、计划、速查、许可说明
 ├── samples/
@@ -267,6 +268,7 @@ git clone https://github.com/chaozwn/infini_docker.git upstream-src/infini_docke
 ## 重要文件
 
 - `docs/QUICK-REFERENCE.md`: 高信号速查。
+- `docs/CONTENT-MODEL.md`: 内容类型、维护边界和 RAG/文件放置规则。
 - `docs/USAGE-GUIDE.md`: 使用方式。
 - `docs/PROJECT-ARCHITECTURE.md`: 架构说明。
 - `docs/SOURCE-AUDIT.md`: 上游文档和源码可用性审计。

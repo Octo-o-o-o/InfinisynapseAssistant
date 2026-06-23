@@ -26,18 +26,20 @@ const REGION_ACCOUNT: Record<Region, string> = {
 /** Token 失效码（文档第 8 节）。 */
 export const TOKEN_INVALID_CODES = [1101, 1105];
 
+export interface InfiniSynapseErrorOpts {
+  httpStatus?: number;
+  code?: number;
+  tokenInvalid?: boolean;
+  body?: unknown;
+}
+
 export class InfiniSynapseError extends Error {
-  constructor(
-    message: string,
-    readonly opts: {
-      httpStatus?: number;
-      code?: number;
-      tokenInvalid?: boolean;
-      body?: unknown;
-    } = {},
-  ) {
+  // 注意：不用构造函数参数属性（Node --experimental-strip-types 不支持），显式赋值。
+  readonly opts: InfiniSynapseErrorOpts;
+  constructor(message: string, opts: InfiniSynapseErrorOpts = {}) {
     super(message);
     this.name = "InfiniSynapseError";
+    this.opts = opts;
   }
 }
 
