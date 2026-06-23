@@ -13,6 +13,8 @@
 | 让 AI 助手接手开发 | `AGENTS.md`, `llms.txt` | 对应 `.agents/skills/*/SKILL.md` |
 | 判断内容应该放哪里 | `docs/CONTENT-MODEL.md` | 本文件的“维护边界” |
 | 处理 RAG 和文件放置 | `docs/playbooks/rag-file-placement.md` | `docs/reference/api-index.md` 中 RAG/上传/下载端点 |
+| 接入共享数据源 / 知识库（市场订阅） | `docs/playbooks/market-subscriptions.md` | `docs/reference/api-index.md` 中市场端点 |
+| 让 AI 操作浏览器（购物比价 / 网页） | `docs/playbooks/browser-use.md` | `infinisynapse-browser-extension` skill |
 | 排查报错 / 部署登录失败 | `docs/playbooks/troubleshooting.md` | `infinisynapse-deployment` skill |
 | 私有化部署 | `docs/QUICK-REFERENCE.md` | `infinisynapse-deployment` skill, `upstream-docs/.../private-deployment-guide.md` |
 | 速查易混术语 | `docs/reference/glossary.md` | 词条指向的 `reference/` 与 `playbooks/` |

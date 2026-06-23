@@ -11,6 +11,7 @@ description: |
 
 先读:
 
+- `docs/playbooks/browser-use.md`（是否需要 Browser Use + 产品接入流程 + UX）
 - `upstream-docs/infinisynapse-site/zh/markdown/chrome-plugin-install.md`
 - `upstream-docs/infinisynapse-site/markdown/chrome-plugin-install.md` 作为英文补充参考
 - `.agents/skills/infinisynapse-server-api/SKILL.md`

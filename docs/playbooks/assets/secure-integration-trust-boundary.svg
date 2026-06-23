@@ -1,0 +1,64 @@
+<svg viewBox="0 0 780 470" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif">
+  <defs>
+    <marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#2563eb"/>
+    </marker>
+    <marker id="ahr" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#dc2626"/>
+    </marker>
+  </defs>
+
+  <rect x="6" y="6" width="768" height="458" rx="14" fill="#fbfcfd" stroke="#e5e9f0"/>
+
+  <text x="24" y="36" font-size="17" font-weight="700" fill="#0f172a">安全接入 · 信任边界与数据归属</text>
+  <text x="24" y="57" font-size="12" fill="#64748b">API Key 只在后端边界内；前端永不直连 InfiniSynapse Server API</text>
+
+  <!-- Zone 1: Frontend -->
+  <rect x="24" y="86" width="196" height="250" rx="10" fill="#f1f5f9" stroke="#cbd5e1"/>
+  <text x="122" y="112" text-anchor="middle" font-size="14" font-weight="700" fill="#334155">前端 / mini-app</text>
+  <text x="122" y="130" text-anchor="middle" font-size="10.5" fill="#94a3b8">不可信边界</text>
+  <line x1="40" y1="143" x2="204" y2="143" stroke="#e2e8f0"/>
+  <text x="40" y="172" font-size="12.5" fill="#475569">• 业务表单 / 业务 ID</text>
+  <text x="40" y="198" font-size="12.5" fill="#475569">• 进度展示（UI）</text>
+  <text x="40" y="224" font-size="12.5" fill="#475569">• 业务结论文本</text>
+  <text x="122" y="312" text-anchor="middle" font-size="10.5" fill="#16a34a">✓ 仅业务数据可见</text>
+
+  <!-- Zone 2: Your backend (trust boundary) -->
+  <rect x="292" y="86" width="196" height="250" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.6"/>
+  <text x="390" y="112" text-anchor="middle" font-size="14" font-weight="700" fill="#1e3a8a">你的后端</text>
+  <text x="390" y="130" text-anchor="middle" font-size="10.5" fill="#3b82f6">持有 API Key · 代理</text>
+  <line x1="308" y1="143" x2="472" y2="143" stroke="#bfdbfe"/>
+  <rect x="308" y="158" width="38" height="18" rx="4" fill="#f59e0b"/>
+  <text x="327" y="171" text-anchor="middle" font-size="10.5" font-weight="700" fill="#ffffff">KEY</text>
+  <text x="352" y="171" font-size="12.5" font-weight="700" fill="#b45309">API Key（仅此处）</text>
+  <text x="308" y="200" font-size="12.5" fill="#1e40af">• taskId / connId</text>
+  <text x="308" y="224" font-size="12.5" fill="#1e40af">• 上传文件映射</text>
+  <text x="308" y="248" font-size="12.5" fill="#1e40af">• workspace 产物路径</text>
+  <text x="308" y="272" font-size="12.5" fill="#1e40af">• 任务状态（落库）</text>
+
+  <!-- Zone 3: InfiniSynapse -->
+  <rect x="560" y="86" width="196" height="250" rx="10" fill="#f0fdf4" stroke="#86efac"/>
+  <text x="658" y="112" text-anchor="middle" font-size="14" font-weight="700" fill="#166534">InfiniSynapse</text>
+  <text x="658" y="130" text-anchor="middle" font-size="10.5" fill="#22c55e">Server API</text>
+  <line x1="576" y1="143" x2="740" y2="143" stroke="#bbf7d0"/>
+  <text x="576" y="172" font-size="12.5" fill="#15803d">• 任务执行 / Agent</text>
+  <text x="576" y="198" font-size="12.5" fill="#15803d">• 数据源 / RAG</text>
+  <text x="576" y="224" font-size="12.5" fill="#15803d">• workspace 产物</text>
+
+  <!-- Frontend <-> Backend -->
+  <line x1="220" y1="185" x2="290" y2="185" stroke="#2563eb" stroke-width="1.5" marker-end="url(#ah)"/>
+  <text x="255" y="179" text-anchor="middle" font-size="9.5" fill="#1e40af">表单 / 文件</text>
+  <line x1="292" y1="245" x2="222" y2="245" stroke="#2563eb" stroke-width="1.5" marker-end="url(#ah)"/>
+  <text x="255" y="263" text-anchor="middle" font-size="9.5" fill="#1e40af">进度 / 结论</text>
+
+  <!-- Backend <-> InfiniSynapse -->
+  <line x1="488" y1="185" x2="558" y2="185" stroke="#2563eb" stroke-width="1.5" marker-end="url(#ah)"/>
+  <text x="523" y="179" text-anchor="middle" font-size="9.5" fill="#1e40af">Bearer + 任务</text>
+  <line x1="560" y1="245" x2="490" y2="245" stroke="#2563eb" stroke-width="1.5" marker-end="url(#ah)"/>
+  <text x="523" y="263" text-anchor="middle" font-size="9.5" fill="#1e40af">SSE / 产物</text>
+
+  <!-- Forbidden direct flow -->
+  <path d="M122,336 C122,430 658,430 658,338" fill="none" stroke="#dc2626" stroke-width="1.6" stroke-dasharray="6 5" marker-end="url(#ahr)"/>
+  <rect x="248" y="398" width="284" height="26" rx="13" fill="#fef2f2" stroke="#fecaca"/>
+  <text x="390" y="415" text-anchor="middle" font-size="11" font-weight="600" fill="#dc2626">✗ 前端直连 = API Key 泄露（INF-SEC-002）</text>
+</svg>

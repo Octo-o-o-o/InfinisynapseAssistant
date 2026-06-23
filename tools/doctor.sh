@@ -42,6 +42,9 @@ require_file "docs/reference/capabilities.md"
 require_file "docs/reference/glossary.md"
 require_file "docs/playbooks/troubleshooting.md"
 require_file "docs/playbooks/secure-integration.md"
+require_file "docs/playbooks/market-subscriptions.md"
+require_file "docs/playbooks/browser-use.md"
+require_file "docs/playbooks/assets/secure-integration-trust-boundary.svg"
 
 # 钩子与扫描器
 require_file "tools/hooks/post-edit.sh"

@@ -3,6 +3,20 @@
 本项目变更记录，遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 版本对应规则包成熟度，不对应 InfiniSynapse 官方版本。
 
+## [0.3.3] - 2026-06-23
+
+安全接入图示化；补市场订阅与 Browser Use 两份 playbook。
+
+### Added
+- `docs/playbooks/assets/secure-integration-trust-boundary.svg`：信任边界图（前端只持业务数据、后端持 Key 代理、前端直连为反模式），嵌入 `secure-integration.md` 决策表上方；自包含浅色背景，GitHub 明暗主题下均可读。
+- `docs/playbooks/market-subscriptions.md`：共享数据源/知识库市场订阅（账号 API base、发现→只订免费→回 Server API enable 的往返、反模式与清单）。
+- `docs/playbooks/browser-use.md`：是否需要 Browser Use 的决策 + 产品接入流程（建任务前查 session、引导安装、断连处理、UX 文案）。
+
+### Changed
+- `docs/README.md` 导航、`AGENTS.md §9`、`llms.txt` 接入两份新 playbook；`infinisynapse-browser-extension` skill 先读加入 browser-use playbook。
+- `tools/doctor.sh` 检查新 playbook 与 SVG。
+- 市场端点字段（`database_market_id`/`ragMarketId`/`subscribeSource`）经上游文档核对。
+
 ## [0.3.2] - 2026-06-23
 
 按标准文档规范补齐 docs 缺口（安全、术语），并补全导航。
