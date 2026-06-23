@@ -73,7 +73,7 @@ InfiniSynapse 目前在公开训练语料里覆盖较少，AI 助手很容易在
 │   ├── CONTENT-MODEL.md              # AI/人类友好 × 官方/特定用法的内容维护模型
 │   ├── MAINTENANCE.md                # 上游同步、派生文档更新与发布前检查
 │   ├── reference/                    # 事实基准：api-index / capabilities / task-lifecycle / glossary
-│   ├── playbooks/                    # 特定用法：安全接入 / RAG / 市场订阅 / Browser Use / 任务分享 / 排查（+ assets/ 图）
+│   ├── playbooks/                    # 特定用法：安全接入 / 成熟产品接入 / RAG / 市场订阅 / Browser Use / 任务分享 / 排查（+ assets/ 图）
 │   ├── proposals/                    # 产品方案草案（外围，不进规则主线）
 │   └── ...                           # 使用说明、架构、审计、计划、速查、许可说明
 ├── samples/

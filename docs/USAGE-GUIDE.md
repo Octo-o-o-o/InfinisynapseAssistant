@@ -171,6 +171,8 @@ bash /Users/wangyixiao/WorkSpace/InfinisynapseAssistant/tools/hooks/lib/scan-inf
 
 老项目里最值得优先修的是安全和时序：API Key 服务端化、先连 SSE 再发 `newTask`、二进制下载按流处理、完成后读 workspace。
 
+如果老项目已经有用户体系、权限、队列、会员/计费、业务 RAG 或自研短链路 AI，先读 `docs/playbooks/existing-product-integration.md`。默认不要替换这些核心系统，而是把 InfiniSynapse 接成可灰度、可恢复、可取消、可审计的长任务 Agent 层。
+
 ## 相比直接引用原始文档的优势
 
 原始文档适合人工查阅，但对 AI 来说缺少任务入口、优先级和安全边界。本项目把这些内容整理成 AI 能直接执行的规则：
@@ -190,6 +192,7 @@ bash /Users/wangyixiao/WorkSpace/InfinisynapseAssistant/tools/hooks/lib/scan-inf
 | 了解平台能做什么 | `docs/reference/capabilities.md` |
 | 写 SDK 或后端 route | `infinisynapse-server-api` skill + `samples/sdk/` |
 | 安全接入 / 不泄露 API Key | `docs/playbooks/secure-integration.md` |
+| 成熟 SaaS / 老项目接入边界 | `docs/playbooks/existing-product-integration.md` |
 | RAG 资料 / 文件放哪里 | `docs/playbooks/rag-file-placement.md` |
 | 订阅共享数据源 / 知识库 | `docs/playbooks/market-subscriptions.md` |
 | 浏览器自动化或购物比价 | `docs/playbooks/browser-use.md` + `infinisynapse-browser-extension` skill |

@@ -13,7 +13,7 @@
 6. docs/reference/capabilities.md — 平台能力总览（能力→端点）
 7. docs/reference/api-index.md — 端点总目录（事实基准）
 8. docs/reference/task-lifecycle.md — SSE 事件 / 消息类型 / 长任务时序 / 恢复
-9. docs/playbooks/ — 安全接入、RAG/文件放置、市场订阅、Browser Use、任务分享、计划/执行审批、下游项目反哺、报错排查等核心场景的特定用法
+9. docs/playbooks/ — 安全接入、成熟产品接入、RAG/文件放置、市场订阅、Browser Use、任务分享、计划/执行审批、下游项目反哺、报错排查等核心场景的特定用法
    （docs/reference/glossary.md 为易混术语速查）
 10. 任务对应的 skill（见下）
 

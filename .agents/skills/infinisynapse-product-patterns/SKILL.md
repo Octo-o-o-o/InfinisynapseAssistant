@@ -15,6 +15,7 @@ description: |
 - `upstream-docs/infinisynapse-site/zh/markdown/server-api-reference.md` 第 10 节
 - `docs/reference/task-lifecycle.md`（含三类产品与 API 的对应表）
 - `docs/playbooks/secure-integration.md`（后端代理 + API Key 安全 + 状态托管）
+- `docs/playbooks/existing-product-integration.md`（成熟 SaaS / 老项目接入边界、worker 幂等、多租户风险）
 - `.agents/skills/infinisynapse-server-api/SKILL.md`
 - 可复制骨架: `samples/sdk/`、`samples/templates/`
 
@@ -71,9 +72,21 @@ Frontend -> Your Backend -> InfiniSynapse Server API
 - prompt 明确报告目标、受众、结构和引用要求。
 - 多轮修订使用同一 `taskId` 的 `askResponse`。
 
+### Existing SaaS / mature product extension
+
+适合已经有用户、权限、业务数据库、队列、会员/计费或自研 AI 的产品。
+
+- 不要把 InfiniSynapse 当作重写业务系统的理由；它默认是长任务 Agent 层。
+- 自有产品保留用户、权限、计费、确定性业务状态、低延迟结构化 LLM 和已有带权限的 RAG。
+- 先接一个低风险闭环：API route 创建自有任务并入队，worker 先 SSE 后 `newTask`，完成后同步 workspace artifact。
+- `newTask` 是外部副作用；预生成 `taskId`/`connId`，用输入 hash 去重，worker 恢复时先查消息和 workspace，不要盲目自动重发。
+- SaaS 单 API Key 不等于每个业务用户都有物理隔离租户；多租户产品必须由自有后端做用户/组织权限和产物访问控制。
+- P0 不默认接 Browser Use 或长期 RAG；确认 per-user session、RAG 隔离和用户授权后再开放。
+
 ## Design principles
 
 - 先设计恢复: 刷新页面后能用 `taskId` 读回进度和产物。
 - 区分消息流和文件产物: SSE 适合进度，workspace 适合交付物。
 - 不需要浏览器上下文时，不要强依赖 Chrome 插件。
 - 用户上传的原始文件、Agent 请求的临时文件、最终产物要分目录管理。
+- 成熟产品优先把 InfiniSynapse 接成一个可灰度、可取消、可恢复、可审计的后端能力，而不是一次性替换原有业务流。

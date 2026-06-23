@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | 入口规则 | `AGENTS.md`, `CLAUDE.md`, `llms.txt` | AI 启动后优先读取的导航和通用约束 |
 | 规范参考 | `docs/reference/`（api-index, capabilities, task-lifecycle, glossary） | 从上游提炼的端点/能力/SSE 时序/术语，事实基准 |
-| 特定用法 playbooks | `docs/playbooks/` | 跨章节组合的核心场景做法：安全接入、RAG/文件、市场订阅、Browser Use、任务分享、排查 |
+| 特定用法 playbooks | `docs/playbooks/` | 跨章节组合的核心场景做法：安全接入、成熟产品接入、RAG/文件、市场订阅、Browser Use、任务分享、排查 |
 | 任务 skills | `.agents/skills/`（唯一源）, `.claude/skills/`（镜像） | 按部署、Server API、CLI、产品模式、浏览器插件分流 |
 | 可跑参考 | `samples/sdk/`, `samples/templates/` | TS/Python 零依赖 client、runTask、代理、curl 速查 |
 | 实时护栏 | `tools/hooks/` | PostToolUse 扫描器 + fixtures，拦截高风险反模式 |
@@ -50,4 +50,3 @@
 - 上传要区分 Agent sandbox 上传和产品主动归档上传。
 - 最终交付物优先从 task workspace 读取。
 - 私有化部署排查时优先检查 `AUTHING_SERVER_URL`。
-
