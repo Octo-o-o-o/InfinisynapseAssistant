@@ -125,6 +125,7 @@ cp -R .claude/skills/infinisynapse-* /path/to/your-app/.claude/skills/
 - TypeScript 后端：复制 `samples/sdk/typescript/` 中的 client、SSE、runTask 和代理示例。
 - Python 后端：复制 `samples/sdk/python/`。
 - 代码扫描：在业务项目 pre-commit 或 CI 中调用本仓库的 `tools/hooks/lib/scan-infinisynapse.sh`。
+- 反哺检查：在业务项目增加 `feedback:check` / `precommit:check`，提交前判断是否有通用经验需要回写本仓库。
 
 扫描器可以直接跨项目调用：
 
@@ -133,6 +134,8 @@ bash /Users/wangyixiao/WorkSpace/InfinisynapseAssistant/tools/hooks/lib/scan-inf
 ```
 
 不要把这些代码直接放到前端。InfiniSynapse API Key 必须只在服务端。
+
+下游项目的固定规则、脚本和反哺流程见 `docs/playbooks/downstream-projects.md`。
 
 ## 新项目开发流程
 

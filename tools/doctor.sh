@@ -47,6 +47,7 @@ require_file "docs/playbooks/market-subscriptions.md"
 require_file "docs/playbooks/browser-use.md"
 require_file "docs/playbooks/task-sharing.md"
 require_file "docs/playbooks/plan-act-approval.md"
+require_file "docs/playbooks/downstream-projects.md"
 require_file "docs/playbooks/assets/secure-integration-trust-boundary.svg"
 
 # 钩子与扫描器

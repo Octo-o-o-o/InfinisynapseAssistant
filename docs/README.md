@@ -8,6 +8,7 @@
 | --- | --- | --- |
 | 快速理解项目 | `README.md` | `docs/USAGE-GUIDE.md`, `docs/PROJECT-ARCHITECTURE.md` |
 | 新项目 / 老项目如何接入 InfiniSynapse | `docs/USAGE-GUIDE.md` | `docs/playbooks/secure-integration.md`, `samples/sdk/` |
+| 下游业务项目如何使用并反哺本规则包 | `docs/playbooks/downstream-projects.md` | `docs/USAGE-GUIDE.md`, `tools/hooks/lib/scan-infinisynapse.sh` |
 | 了解平台能做什么 | `docs/reference/capabilities.md` | `docs/reference/api-index.md`, `docs/reference/task-lifecycle.md` |
 | 快速查接口和红线 | `docs/QUICK-REFERENCE.md` | `docs/reference/api-index.md`, `docs/reference/task-lifecycle.md` |
 | 安全接入产品 / 不泄露 API Key | `docs/playbooks/secure-integration.md` | `samples/templates/server-side-agent-flow.md`, `samples/sdk/` |

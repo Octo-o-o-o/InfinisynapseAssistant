@@ -112,6 +112,7 @@ InfiniSynapse 目前在公开训练语料里覆盖较少，AI 助手很容易在
 - 代码使用：把 `samples/sdk/` 内化到业务后端；不要把带 API Key 的代码放进前端。
 
 新项目和老项目的具体开发流程见 `docs/USAGE-GUIDE.md`。
+下游业务项目如何固定引用本规则包、调用扫描器并在提交前反哺，见 `docs/playbooks/downstream-projects.md`。
 
 ## 技能（Skills）
 

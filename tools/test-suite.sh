@@ -122,6 +122,10 @@ grep -q "https://www.infinisynapse.cn/" README.md && ok "README 含 InfiniSynaps
 grep -q "不是 npm 依赖" docs/USAGE-GUIDE.md && ok "使用指南说明 npm 不是主入口" || bad "使用指南缺 npm 使用边界"
 grep -q "具体怎么添加 skill" docs/USAGE-GUIDE.md && ok "使用指南含 skill 添加方式" || bad "使用指南缺 skill 添加方式"
 grep -q "老项目接入流程" docs/USAGE-GUIDE.md && ok "使用指南含老项目接入流程" || bad "使用指南缺老项目接入流程"
+test -s docs/playbooks/downstream-projects.md && ok "下游项目反哺 playbook 存在" || bad "缺下游项目反哺 playbook"
+grep -q "downstream-projects.md" docs/USAGE-GUIDE.md && ok "使用指南指向下游项目反哺 playbook" || bad "使用指南缺下游项目反哺入口"
+grep -q "feedback:check" docs/playbooks/downstream-projects.md && ok "下游项目 playbook 含 feedback:check" || bad "下游项目 playbook 缺 feedback:check"
+grep -q "precommit:check" docs/playbooks/downstream-projects.md && ok "下游项目 playbook 含 precommit:check" || bad "下游项目 playbook 缺 precommit:check"
 
 # ---- 5b. 本地方案草稿不应进入仓库主线 ----
 for p in \
