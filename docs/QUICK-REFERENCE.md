@@ -54,6 +54,14 @@ x-lang: zh_CN
 | `/api/tools/taskUpload/:taskId?subdir=&naming=` | 产品主动把文件归档到 workspace |
 | `/api/upload/:directory` | 通用目录上传 |
 
+## RAG 与文件放置
+
+- 短期任务资料放 task workspace，建议 `upload_documents` 子目录。
+- Agent 执行中主动要文件时，才用 `/api/ai/upload?taskId=` 上传到 sandbox。
+- 长期知识库资料放 InfiniSynapse 可访问的 RAG `docDir` 或 OSS/S3/file 后端。
+- SaaS RAG 不能读取开发者本机 `/Users/...` 目录。
+- 详细决策表见 `docs/playbooks/rag-file-placement.md`。
+
 ## 常见错误
 
 | 现象 | 优先检查 |

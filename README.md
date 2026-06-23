@@ -61,8 +61,10 @@ InfiniSynapse 目前在公开训练语料里覆盖较少，AI 助手很容易在
 ├── CLAUDE.md                         # Claude Code 入口 + 硬约束速览
 ├── llms.txt                          # 给任意 LLM 的项目导航
 ├── docs/
+│   ├── README.md                     # 文档导航：人类入口、目录分层和维护边界
 │   ├── CONTENT-MODEL.md              # AI/人类友好 × 官方/特定用法的内容维护模型
 │   ├── reference/                    # api-index.md（端点总目录）+ task-lifecycle.md（SSE 时序）
+│   ├── playbooks/                    # RAG/文件放置等核心场景的特定用法
 │   └── ...                           # 使用说明、审计、计划、速查、许可说明
 ├── samples/
 │   ├── sdk/typescript/               # 零依赖 TS client + SSE 解析 + runTask + 代理 + 离线单测
@@ -174,8 +176,11 @@ AI 应该读取：
 ```text
 AGENTS.md
 llms.txt
+docs/README.md
+docs/CONTENT-MODEL.md
 .agents/skills/
 docs/QUICK-REFERENCE.md
+docs/playbooks/
 upstream-docs/infinisynapse-site/zh/markdown/
 ```
 

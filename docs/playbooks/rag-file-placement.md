@@ -1,0 +1,64 @@
+# RAG 与文件放置 Playbook
+
+本文是特定用法总结：它把 Server API 文档中的任务工作区、文件上传、RAG、数据源和产物下载能力合并成产品开发时的默认判断。端点事实以 `docs/reference/api-index.md` 和上游中文 SaaS 文档为准。
+
+## 一句话规则
+
+短期任务资料放 `task workspace/upload_documents`；长期知识库资料放 InfiniSynapse 可访问的 RAG 文档目录或 OSS/S3；本机目录不是 SaaS RAG 的可访问位置。
+
+## 决策表
+
+| 场景 | 放置位置 | 主要接口 | 说明 |
+| --- | --- | --- | --- |
+| 单次报告、求职分析、项目调研的输入文件 | 当前任务 workspace，建议 `upload_documents` 子目录 | `POST /api/tools/taskUpload/:taskId?subdir=upload_documents&naming=original` | 适合本次任务使用，不默认沉淀为长期知识库。 |
+| Agent 执行中要求补文件 | 当前任务 sandbox | `POST /api/ai/upload?taskId=`，随后用 `askResponse` 继续 | 只在 SSE 中收到文件请求时使用。 |
+| 长期 RAG 知识库 | InfiniSynapse 可访问的 RAG `docDir`，或 OSS/S3/file 后端 | `/api/ai_rag_sdk/create`, `/api/ai_rag_sdk/enabled`, `/api/ai_rag_sdk/fileTree` | 适合可复用知识库、公司资料、长期产品文档。 |
+| 结构化表格或数据库文件 | 任务 workspace 临时分析，或数据源/数据库 | `/api/tools/taskUpload/:taskId`, `/api/ai_database/upload/:databaseId` | 取决于是否需要长期复用和结构化查询。 |
+| 任务生成的报告、图表、附件 | 当前任务 workspace | `getTaskWorkspace`, `previewFile`, `downloadTaskFile`, `downloadZip` | 完成后不要只读最后一条文本，要枚举 workspace。 |
+
+## SaaS 版本的边界
+
+在 SaaS 版本中，`docDir` 不能写成开发者电脑上的 `/Users/...` 或本机相对路径。InfiniSynapse SaaS 服务端无法读取你的本地磁盘。
+
+如果资料只服务于一次任务，应先创建或复用任务，再上传到 task workspace 的 `upload_documents` 子目录。如果资料需要被多个任务长期复用，应放到 InfiniSynapse 服务端可访问的位置，例如平台可访问的文件系统、OSS/S3/file 后端，或已经创建并启用的 RAG 知识库资源。
+
+## 推荐流程
+
+### 单次资料分析
+
+1. 后端生成 `connId`，需要恢复或提前上传时同时生成 `taskId`。
+2. 用 `/api/tools/taskUpload/:taskId?subdir=upload_documents&naming=original` 上传用户资料。
+3. 先建立 `/api/ai/events?connId=...` SSE。
+4. 再发送 `/api/ai/message` 的 `newTask`，提示 Agent 使用当前任务 workspace 中的 `upload_documents`。
+5. 完成后用 `getTaskWorkspace` 枚举产物，用 `previewFile` 或 `downloadTaskFile` 读取结果。
+
+### 长期知识库问答
+
+1. 确认文件位置能被 InfiniSynapse 服务端访问。
+2. 创建或选择 RAG 配置。
+3. 使用 RAG 相关接口查看文件树、启用知识库，并在创建任务前把相关资源设为 enabled。
+4. 创建任务时让 Agent 明确使用已启用的知识库，而不是读取本地路径。
+
+### 执行中补文件
+
+1. 监听 SSE。
+2. 收到 `message.ask=upload_file_to_sandbox` 时，调用 `/api/ai/upload?taskId=`。
+3. 用 `/api/ai/message` 发送 `askResponse`，把上传结果返回给 Agent。
+4. 继续监听 SSE，直到任务完成。
+
+## 常见反模式
+
+- 把 SaaS RAG 的 `docDir` 写成 `/Users/...`。
+- 把一次性任务资料做成长期 RAG，导致知识库污染和权限边界变复杂。
+- Agent 没有请求文件时滥用 `/api/ai/upload`。
+- 上传了输入资料，但任务完成后只读最后一条 SSE 文本，不检查 workspace 产物。
+- 创建任务后才临时启用 RAG 或数据源，导致 Agent 本轮任务不可见。
+
+## 检查清单
+
+- 这份文件是单次使用还是长期复用？
+- InfiniSynapse 服务端是否能访问文件所在位置？
+- 如果是 SaaS，是否避免了本机路径？
+- 上传接口是主动归档到 workspace，还是响应 Agent 的 sandbox 请求？
+- RAG 或数据源是否在 `newTask` 前已经启用？
+- 任务完成后是否读取了 workspace 产物？

@@ -9,7 +9,7 @@
 - AI 友好 / 人类友好。
 - 官方文档内容 / 特定用法内容。
 
-Claude 写规则或方案时，先判断内容属于哪类：官方事实放 `upstream-docs/` 或 `docs/reference/`；核心场景里的默认选择、顺序、风险边界才写入 skills、quick reference、templates 或 proposals。完整模型见 `docs/CONTENT-MODEL.md`。
+Claude 写规则或方案时，先判断内容属于哪类：官方事实放 `upstream-docs/` 或 `docs/reference/`；核心场景里的默认选择、顺序、风险边界才写入 skills、quick reference、templates 或 playbooks。完整模型见 `docs/CONTENT-MODEL.md`，文档导航见 `docs/README.md`。
 
 ## 0. 硬约束速览（最高优先级）
 
@@ -28,8 +28,10 @@ Claude 写规则或方案时，先判断内容属于哪类：官方事实放 `up
 
 1. `AGENTS.md`
 2. `docs/CONTENT-MODEL.md`（判断内容应放在官方事实还是特定用法）
-3. `docs/reference/api-index.md` + `docs/reference/task-lifecycle.md`（定位端点与时序）
-4. 用户任务对应的 `.claude/skills/*/SKILL.md`
+3. `docs/README.md`（定位人类文档、reference、playbooks）
+4. `docs/reference/api-index.md` + `docs/reference/task-lifecycle.md`（定位端点与时序）
+5. 用户任务对应的 `.claude/skills/*/SKILL.md`
+6. 涉及 RAG/文件放置时读 `docs/playbooks/rag-file-placement.md`
 
 ## Skills
 
@@ -59,6 +61,6 @@ Claude 写规则或方案时，先判断内容属于哪类：官方事实放 `up
 - 回答 InfiniSynapse API 相关问题前，先 `rg` 搜 `upstream-docs/infinisynapse-site/zh/markdown/`，英文快照只作补充。
 - 写产品集成方案时，默认采用后端代理 API Key 的架构。
 - 写长任务代码时，默认先连 SSE，再发 `newTask`。
-- 写 RAG / 文件方案时，必须区分 task workspace、sandbox、RAG `docDir`、OSS/S3、数据源上传，不能把 SaaS RAG 写成本机目录。
+- 写 RAG / 文件方案时，必须区分 task workspace、sandbox、RAG `docDir`、OSS/S3、数据源上传，不能把 SaaS RAG 写成本机目录；详细规则见 `docs/playbooks/rag-file-placement.md`。
 - 写私有化部署说明时，必须检查 `AUTHING_SERVER_URL` 的四条规则。
 - 改完跑 `bash tools/doctor.sh` 和 `npm test`；改了 skill 跑 `bash tools/sync-skills.sh`。

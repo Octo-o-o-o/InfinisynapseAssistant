@@ -111,6 +111,19 @@ fi
 # ---- 5. 入口文件硬约束在位 ----
 grep -q "AUTHING_SERVER_URL" AGENTS.md && ok "AGENTS 含 AUTHING_SERVER_URL 规则" || bad "AGENTS 缺 AUTHING_SERVER_URL"
 grep -qE "先.*SSE|先连 SSE|先建立.*SSE" AGENTS.md && ok "AGENTS 含先连 SSE 规则" || bad "AGENTS 缺先连 SSE 规则"
+grep -q "upload_documents" docs/playbooks/rag-file-placement.md && ok "RAG playbook 含 upload_documents 规则" || bad "RAG playbook 缺 upload_documents"
+grep -q "SaaS" docs/playbooks/rag-file-placement.md && ok "RAG playbook 含 SaaS 边界" || bad "RAG playbook 缺 SaaS 边界"
+
+# ---- 5b. 本地方案草稿不应进入仓库主线 ----
+for p in \
+  "docs/proposals/job-recruitment-infinisynapse-product-plan.md" \
+  "docs/proposals/project-value-research-infinisynapse-product-plan.md"; do
+  if git ls-files --error-unmatch "$p" >/dev/null 2>&1; then
+    bad "本地方案草稿不应被 Git 跟踪: $p"
+  else
+    ok "本地方案草稿未被 Git 跟踪: $p"
+  fi
+done
 
 # ---- 6. 上游文档关键内容 ----
 ZH="upstream-docs/infinisynapse-site/zh/markdown/server-api-reference.md"

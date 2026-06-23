@@ -1,0 +1,35 @@
+# 文档导航
+
+本目录保存面向开发者阅读的说明、从官方文档提炼出的事实索引，以及围绕核心场景沉淀的特定用法。原始官方快照不放在这里，而是保存在 `upstream-docs/`。
+
+## 推荐阅读路径
+
+| 目标 | 先读 | 再读 |
+| --- | --- | --- |
+| 快速理解项目 | `README.md` | `docs/USAGE-GUIDE.md`, `docs/PROJECT-ARCHITECTURE.md` |
+| 快速查接口和红线 | `docs/QUICK-REFERENCE.md` | `docs/reference/api-index.md`, `docs/reference/task-lifecycle.md` |
+| 让 AI 助手接手开发 | `AGENTS.md`, `llms.txt` | 对应 `.agents/skills/*/SKILL.md` |
+| 判断内容应该放哪里 | `docs/CONTENT-MODEL.md` | 本文件的“维护边界” |
+| 处理 RAG 和文件放置 | `docs/playbooks/rag-file-placement.md` | `docs/reference/api-index.md` 中 RAG/上传/下载端点 |
+| 核对官方来源 | `docs/SOURCE-AUDIT.md` | `upstream-docs/infinisynapse-site/zh/markdown/` |
+
+## 目录分层
+
+| 目录或文件 | 定位 | 内容类型 |
+| --- | --- | --- |
+| `docs/reference/` | 从官方文档提炼出的事实基准 | AI 友好 + 官方文档内容 |
+| `docs/playbooks/` | 基于官方事实总结的核心场景做法 | AI/人类友好 + 特定用法内容 |
+| `docs/CONTENT-MODEL.md` | 说明内容分类和维护边界 | 人类友好 + 特定用法内容 |
+| `docs/QUICK-REFERENCE.md` | 高频规则和接口速查 | AI/人类友好 + 特定用法内容 |
+| `docs/USAGE-GUIDE.md` | 如何把本仓库接入 AI 工具和业务项目 | 人类友好 |
+| `docs/PROJECT-ARCHITECTURE.md` | 仓库结构和规则包设计 | 人类友好 |
+| `docs/SOURCE-AUDIT.md` | 上游来源、同步状态和不可用来源说明 | 人类友好 + 官方文档内容 |
+| `docs/LICENSE-NOTES.md` | 第三方文档快照和仓库许可说明 | 人类友好 |
+
+## 维护边界
+
+- `docs/reference/` 只放可追溯到官方文档的事实，不写产品建议。
+- `docs/playbooks/` 只放跨多个官方章节组合出的核心场景做法，不复制大段官方原文。
+- `AGENTS.md`、`CLAUDE.md` 和 `llms.txt` 只保留入口、读取顺序和硬约束，长解释放回 `docs/`。
+- 新增特定用法前，先确认官方文档或 `docs/reference/` 是否已经清楚回答；已经清楚回答的内容只链接，不重复维护。
+- 未定稿的业务方案不默认进入规则包主线，避免把一次性方案误当作通用规范。
