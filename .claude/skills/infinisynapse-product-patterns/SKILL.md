@@ -1,10 +1,10 @@
 ---
 name: infinisynapse-product-patterns
 description: |
-  基于 InfiniSynapse 设计任务型产品，包括高考咨询、购物比价、报告写作、通用长任务 Agent 应用。
+  基于 InfiniSynapse 设计任务型产品，包括高考咨询、购物比价、报告写作、证据驱动决策包、通用长任务 Agent 应用。
   激活条件:
     - 用户问“基于这个项目开发产品”
-    - 用户设计 mini-app、SaaS 功能、报告生成、购物/网页任务、高考助手
+    - 用户设计 mini-app、SaaS 功能、报告生成、尽调/决策包、购物/网页任务、高考助手
     - 用户需要 API 编排而不是单个 endpoint
 ---
 
@@ -16,6 +16,7 @@ description: |
 - `docs/reference/task-lifecycle.md`（含三类产品与 API 的对应表）
 - `docs/playbooks/secure-integration.md`（后端代理 + API Key 安全 + 状态托管）
 - `docs/playbooks/existing-product-integration.md`（成熟 SaaS / 老项目接入边界、worker 幂等、多租户风险）
+- `docs/playbooks/task-sharing.md`（公开分享边界；原始 task public 会公开全部消息和文件）
 - `.agents/skills/infinisynapse-server-api/SKILL.md`
 - 可复制骨架: `samples/sdk/`、`samples/templates/`
 
@@ -52,7 +53,7 @@ Frontend -> Your Backend -> InfiniSynapse Server API
 - 可选上传: `/api/ai/upload?taskId=`
 - 恢复: `/api/ai_task/getUiMessageById?id=`
 - 产物: `getTaskWorkspace` + `previewFile` + `downloadTaskFile`
-- 分享: `setShare` + public task endpoints
+- 分享: 只有原始任务全部可公开时才用 `setShare` + public task endpoints；含上传材料或隐私时发布业务侧脱敏副本
 
 ### Shopping comparison / web research
 
@@ -72,6 +73,16 @@ Frontend -> Your Backend -> InfiniSynapse Server API
 - prompt 明确报告目标、受众、结构和引用要求。
 - 多轮修订使用同一 `taskId` 的 `askResponse`。
 
+### Evidence-backed decision package
+
+适合项目尽调、供应商评估、Build-vs-Buy、开源引入、投研初筛等高价值判断。
+
+- 不要只要求"写一篇报告"；prompt 要求输出 decision memo、scorecard、evidence ledger、risk/gates 和 validation plan。
+- 事实、推断、假设、建议分开写；关键判断必须带来源、置信度和"什么事实会改变结论"。
+- SSE 用于展示研究进度，最终判断和结构化评分从 workspace 产物读取，不只依赖最后一条消息。
+- 长期 RAG 只保存用户或 Reviewer 确认过的报告、评分卡或证据摘要；失败任务、草稿和未审结论不要自动 `saveToRag`。
+- 对外分享默认发布脱敏 export；不要把含闭源材料、客户数据或上传文件的原始 task 直接 `setShare`。
+
 ### Existing SaaS / mature product extension
 
 适合已经有用户、权限、业务数据库、队列、会员/计费或自研 AI 的产品。
@@ -90,3 +101,4 @@ Frontend -> Your Backend -> InfiniSynapse Server API
 - 不需要浏览器上下文时，不要强依赖 Chrome 插件。
 - 用户上传的原始文件、Agent 请求的临时文件、最终产物要分目录管理。
 - 成熟产品优先把 InfiniSynapse 接成一个可灰度、可取消、可恢复、可审计的后端能力，而不是一次性替换原有业务流。
+- 报告/尽调类产品要把 evidence、scorecard、decision memo 当作业务对象保存；不要只保存一段文本答案。

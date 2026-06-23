@@ -69,7 +69,7 @@ Frontend -> Product API -> AgentTaskService / InfiniSynapseAdapter -> InfiniSyna
 只有在 P0/P1 稳定后再加：
 
 - RAG / 数据源：必须在 `newTask` 前 list + enabled；私密资料默认不要进入共享长期 RAG。
-- 任务分享：用 `setShare` 前先做业务侧公开确认，不要默认公开含隐私的任务。
+- 任务分享：不要默认 `setShare` 原始任务。只有任务的全部消息和文件都可公开时才用 `setShare`；若只想公开最终摘要/报告，业务侧应生成脱敏 export 或 publish workspace。
 - Browser Use：只有明确需要操作用户浏览器时才接；建任务前查 `/api/ai_browser/session`。
 - ZIP / 文件下载：下载类接口按二进制流处理，不按 JSON envelope 解析。
 
@@ -136,6 +136,7 @@ InfiniSynapse 更适合补强：
 - 不要把全部业务流改成 InfiniSynapse 长任务。
 - 不要用 Browser Use 解决本来可以由后端 API、文件上传或数据库查询完成的问题。
 - 不要在公开 SaaS 单 Key 下默认混存多用户长期 RAG。
+- 不要把含上传材料、内部数据或客户资料的原始 task 直接公开；业务产品通常应发布脱敏副本。
 - 不要假设存在未公开的原生 mini-app / 插件市场发布 API；除非上游文档明确新增接口，否则按自有后端 + Server API 实现。
 - 不要自动执行投递、付款、发布、删除、发送消息等外部写入动作；高风险动作需要计划/审批，见 [plan-act-approval.md](plan-act-approval.md)。
 
