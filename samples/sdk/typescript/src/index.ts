@@ -4,4 +4,5 @@ export type { UploadFile } from "./client.ts";
 export { runTask } from "./runTask.ts";
 export type { RunTaskOptions, RunTaskResult } from "./runTask.ts";
 export { SseParser, parseSseData, consumeSseStream } from "./sse.ts";
+export { TextAccumulator } from "./accumulate.ts";
 export * from "./types.ts";

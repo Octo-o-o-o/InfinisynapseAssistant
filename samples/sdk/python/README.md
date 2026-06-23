@@ -35,6 +35,9 @@ python3 -m py_compile *.py           # 语法检查
 
 ## 说明
 
-- 标准库 `urllib` 是单线程；`run_task` 用「先建连接、发任务、再读流」的简化策略。生产并发/重连建议换 `httpx` + `asyncio` 或线程。
+- 严格「先连 SSE 再发 newTask」：`run_task` 先 `open_events_response()`（立即 urlopen 建连），再 `new_task`，最后读流——不是惰性生成器。
+- 防永久阻塞：`run_task(max_seconds=600, read_timeout=60)`，无事件时定期检查死线后退出。
+- 流式文本按消息 `ts` 累积（同 ts 覆盖），避免服务端发累积快照时重复拼接。
+- 支持两类上传：`upload_to_sandbox`（响应 Agent）/ `task_upload`（主动归档）；`run_task` 可传 `on_upload_request(message) -> (data, filename) | None` 自动应答 `upload_file_to_sandbox`。
 - 下载端点返回二进制（`download_task_file` 返回 `bytes`），不要当 JSON。
-- 区分两类上传见 `api-index.md` 第 5 节（本参考实现聚焦最常用路径，未穷举所有端点）。
+- 标准库 `urllib` 是单线程；生产并发/重连建议换 `httpx` + `asyncio` 或线程。市场订阅等端点未穷举，按需照 `api-index.md` 补。

@@ -3,6 +3,22 @@
 本项目变更记录，遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 版本对应规则包成熟度，不对应 InfiniSynapse 官方版本。
 
+## [0.2.1] - 2026-06-23
+
+提交后完整复查发现并修复参考 SDK 的真实正确性问题（独立审查 + 自检）。
+
+### Fixed
+- **Python（高危）** `run_task` 因 `open_events` 是惰性生成器，实际"先发 newTask 后连 SSE"，违反本项目核心铁律——改为 `open_events_response()` 立即 urlopen 建连，严格先连后发。
+- **Python（高危）** `run_task` 无超时会永久阻塞——加 `max_seconds` 死线 + `read_timeout` 周期检查。
+- **两端** 流式 `message.partial` 文本无脑 `+=`，服务端发累积快照时会重复拼接——改为按消息 `ts` 覆盖累积（新增纯函数 `TextAccumulator` + 离线单测）。
+- **TypeScript** `upload_file_to_sandbox` 在 partial 分片上重复触发多次上传——按 `ts` 去重。
+- **两端** 信封解包未校验 `code===200`，HTTP 200 + 业务错误码会被当成功——非 200 业务码改为抛错。
+- **TypeScript** `runTask.ts` `status = status === "error" ? "error" : "error"` 死代码清理。
+
+### Added
+- Python 客户端补 `upload_to_sandbox` / `task_upload`（标准库 multipart），`run_task` 支持 `on_upload_request` 回调，与 TS 版能力对齐。
+- `TextAccumulator` 累积器（TS `src/accumulate.ts` + Python）+ 4~5 项离线单测；test-suite 自动覆盖。
+
 ## [0.2.0] - 2026-06-23
 
 把规则包从「文档 + 规则」升级为「文档 + 规则 + 可跑 SDK + 实时护栏 + 真回归」。

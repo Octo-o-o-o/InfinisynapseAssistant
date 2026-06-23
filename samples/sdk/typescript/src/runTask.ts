@@ -3,6 +3,7 @@
 
 import { InfiniSynapseClient, type UploadFile } from "./client.ts";
 import { consumeSseStream } from "./sse.ts";
+import { TextAccumulator } from "./accumulate.ts";
 import type { AgentMessage, NotificationData, SseEvent, TaskWorkspace, ChatSettings } from "./types.ts";
 
 export interface RunTaskOptions {
@@ -62,7 +63,8 @@ function isUploadAsk(m: AgentMessage): boolean {
 export async function runTask(client: InfiniSynapseClient, opts: RunTaskOptions): Promise<RunTaskResult> {
   const taskId = opts.taskId ?? uuid();
   const connId = opts.connId ?? uuid();
-  let finalText = "";
+  const acc = new TextAccumulator();
+  const handledAsks = new Set<number>();
   let status: RunTaskResult["status"] = "completed";
   let errorMsg: string | undefined;
 
@@ -99,12 +101,17 @@ export async function runTask(client: InfiniSynapseClient, opts: RunTaskOptions)
       const m = wrap?.message;
       if (!m) return false;
       if (typeof m.text === "string" && m.text) {
-        finalText += m.text;
+        // 按 ts 累积，避免服务端发累积快照时重复拼接
+        acc.add(m.text, typeof m.ts === "number" ? m.ts : undefined);
         opts.onText?.(m.text, m);
       }
       if (isUploadAsk(m)) {
-        // 异步处理上传，不阻塞 SSE 循环
-        void handleUpload(m);
+        // 同一上传请求只处理一次（partial 分片会重复到达）
+        const key = typeof m.ts === "number" ? m.ts : -1;
+        if (!handledAsks.has(key)) {
+          handledAsks.add(key);
+          void handleUpload(m); // 异步处理上传，不阻塞 SSE 循环
+        }
       }
       if (isCompletion(m)) {
         status = status === "error" ? "error" : "completed";
@@ -135,7 +142,7 @@ export async function runTask(client: InfiniSynapseClient, opts: RunTaskOptions)
   const consume = consumeSseStream(stream, handle, opts.signal)
     .catch((e) => {
       if (!opts.signal?.aborted) {
-        status = status === "error" ? "error" : "error";
+        status = "error";
         errorMsg = errorMsg ?? `sse stream error: ${(e as Error).message}`;
       }
     })
@@ -146,7 +153,7 @@ export async function runTask(client: InfiniSynapseClient, opts: RunTaskOptions)
   await Promise.race([readyP, readyTimeout]);
 
   if (opts.signal?.aborted) {
-    return { taskId, connId, finalText, workspace: null, status: "aborted" };
+    return { taskId, connId, finalText: acc.text(), workspace: null, status: "aborted" };
   }
 
   // 3. 发 newTask（带同一 connId）
@@ -175,5 +182,5 @@ export async function runTask(client: InfiniSynapseClient, opts: RunTaskOptions)
     }
   }
 
-  return { taskId, connId, finalText, workspace, status, error: errorMsg };
+  return { taskId, connId, finalText: acc.text(), workspace, status, error: errorMsg };
 }

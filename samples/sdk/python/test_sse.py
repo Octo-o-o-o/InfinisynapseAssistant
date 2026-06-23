@@ -1,7 +1,7 @@
 """离线 SSE 解析器单测，不触网。运行：python3 -m unittest test_sse.py"""
 import unittest
 
-from infinisynapse_client import SseParser, parse_sse_data, is_completion
+from infinisynapse_client import SseParser, parse_sse_data, is_completion, TextAccumulator
 
 
 def collect(chunks):
@@ -56,6 +56,33 @@ class TestSse(unittest.TestCase):
         self.assertEqual(parse_sse_data("ping"), "ping")
         self.assertEqual(parse_sse_data(""), "")
         self.assertEqual(parse_sse_data('{"a":1}'), {"a": 1})
+
+
+class TestAccumulator(unittest.TestCase):
+    def test_same_ts_overwrites(self):
+        a = TextAccumulator()
+        a.add("你", 100)
+        a.add("你好", 100)
+        a.add("你好世界", 100)
+        self.assertEqual(a.text(), "你好世界")
+
+    def test_different_ts_concat(self):
+        a = TextAccumulator()
+        a.add("第一段", 100)
+        a.add("第二段", 200)
+        self.assertEqual(a.text(), "第一段第二段")
+
+    def test_mixed(self):
+        a = TextAccumulator()
+        for t, s in [(1, "A"), (1, "AB"), (2, "C"), (2, "CD")]:
+            a.add(s, t)
+        self.assertEqual(a.text(), "ABCD")
+
+    def test_no_ts_appends(self):
+        a = TextAccumulator()
+        a.add("x", None)
+        a.add("y", None)
+        self.assertEqual(a.text(), "xy")
 
 
 if __name__ == "__main__":

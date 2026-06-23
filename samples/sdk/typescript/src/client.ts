@@ -137,8 +137,16 @@ export class InfiniSynapseClient {
       const msg = (env?.message as string) || `HTTP ${res.status} from ${path}`;
       throw new InfiniSynapseError(msg, { httpStatus: res.status, code, body: parsed });
     }
-    // 有信封就解包；某些 /api/ai/message 直接返回 { success: true }
-    if (env && "data" in env && typeof code === "number") return env.data as T;
+    // 文档：仅 code===200 为成功。出现其它业务码（HTTP 仍 200）视为错误，不吞掉。
+    if (typeof code === "number" && code !== 200) {
+      throw new InfiniSynapseError((env?.message as string) || `business error code ${code}`, {
+        httpStatus: res.status,
+        code,
+        body: parsed,
+      });
+    }
+    // 有信封就解包；某些 /api/ai/message 直接返回 { success: true }（无 code 字段）
+    if (env && "data" in env && code === 200) return env.data as T;
     return parsed as T;
   }
 
