@@ -9,10 +9,13 @@
 | 快速理解项目 | `README.md` | `docs/USAGE-GUIDE.md`, `docs/PROJECT-ARCHITECTURE.md` |
 | 了解平台能做什么 | `docs/reference/capabilities.md` | `docs/reference/api-index.md`, `docs/reference/task-lifecycle.md` |
 | 快速查接口和红线 | `docs/QUICK-REFERENCE.md` | `docs/reference/api-index.md`, `docs/reference/task-lifecycle.md` |
+| 安全接入产品 / 不泄露 API Key | `docs/playbooks/secure-integration.md` | `samples/templates/server-side-agent-flow.md`, `samples/sdk/` |
 | 让 AI 助手接手开发 | `AGENTS.md`, `llms.txt` | 对应 `.agents/skills/*/SKILL.md` |
 | 判断内容应该放哪里 | `docs/CONTENT-MODEL.md` | 本文件的“维护边界” |
 | 处理 RAG 和文件放置 | `docs/playbooks/rag-file-placement.md` | `docs/reference/api-index.md` 中 RAG/上传/下载端点 |
 | 排查报错 / 部署登录失败 | `docs/playbooks/troubleshooting.md` | `infinisynapse-deployment` skill |
+| 私有化部署 | `docs/QUICK-REFERENCE.md` | `infinisynapse-deployment` skill, `upstream-docs/.../private-deployment-guide.md` |
+| 速查易混术语 | `docs/reference/glossary.md` | 词条指向的 `reference/` 与 `playbooks/` |
 | 核对官方来源 | `docs/SOURCE-AUDIT.md` | `upstream-docs/infinisynapse-site/zh/markdown/` |
 
 ## 目录分层
@@ -27,6 +30,8 @@
 | `docs/PROJECT-ARCHITECTURE.md` | 仓库结构和规则包设计 | 人类友好 |
 | `docs/SOURCE-AUDIT.md` | 上游来源、同步状态和不可用来源说明 | 人类友好 + 官方文档内容 |
 | `docs/LICENSE-NOTES.md` | 第三方文档快照和仓库许可说明 | 人类友好 |
+| `docs/PLAN.md` | 已完成项与后续改进路线图 | 人类友好 |
+| `docs/proposals/` | 基于 InfiniSynapse 的产品方案草案（外围，不进规则主线） | 人类友好 + 特定用法内容 |
 
 ## 维护边界
 

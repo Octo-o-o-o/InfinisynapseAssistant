@@ -14,6 +14,7 @@ description: |
 
 - `upstream-docs/infinisynapse-site/zh/markdown/server-api-reference.md` 第 10 节
 - `docs/reference/task-lifecycle.md`（含三类产品与 API 的对应表）
+- `docs/playbooks/secure-integration.md`（后端代理 + API Key 安全 + 状态托管）
 - `.agents/skills/infinisynapse-server-api/SKILL.md`
 - 可复制骨架: `samples/sdk/`、`samples/templates/`
 

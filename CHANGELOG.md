@@ -3,6 +3,19 @@
 本项目变更记录，遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 版本对应规则包成熟度，不对应 InfiniSynapse 官方版本。
 
+## [0.3.2] - 2026-06-23
+
+按标准文档规范补齐 docs 缺口（安全、术语），并补全导航。
+
+### Added
+- `docs/playbooks/secure-integration.md`：安全接入 playbook——后端代理架构、API Key 生命周期、服务端必须托管的状态、决策表、推荐流程、反模式与检查清单（综合 AGENTS §3 + 模板 + 产品模式，链接不复述）。这是本项目的头号场景（防 Key 泄露），此前 docs 无专门页。
+- `docs/reference/glossary.md`：易混术语速查（connId/taskId、sandbox vs workspace、两类上传、public-engine vs 独占、AUTHING_SERVER_URL、docDir、say/ask、completion_result 等），每条一句话 + 指向权威文档。
+
+### Changed
+- `docs/README.md` 导航补全：新增"安全接入""私有化部署""速查术语"阅读路径；目录分层补上此前漏列的 `docs/PLAN.md` 与 `docs/proposals/`。
+- `AGENTS.md` 参考表、`llms.txt`、`infinisynapse-product-patterns` skill 接入两份新文档。
+- `tools/doctor.sh` 检查新文档存在。
+
 ## [0.3.1] - 2026-06-23
 
 按内容模型沉淀文档；对齐 `docs/playbooks/` 结构。

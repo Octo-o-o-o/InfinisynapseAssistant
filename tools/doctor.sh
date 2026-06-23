@@ -39,7 +39,9 @@ require_file "upstream-docs/infinisynapse-site/assets/docs/server-api/compute-re
 require_file "docs/reference/api-index.md"
 require_file "docs/reference/task-lifecycle.md"
 require_file "docs/reference/capabilities.md"
+require_file "docs/reference/glossary.md"
 require_file "docs/playbooks/troubleshooting.md"
+require_file "docs/playbooks/secure-integration.md"
 
 # 钩子与扫描器
 require_file "tools/hooks/post-edit.sh"
