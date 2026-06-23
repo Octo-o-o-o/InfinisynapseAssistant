@@ -12,7 +12,7 @@ description: |
 
 先读:
 
-- `docs/reference/api-index.md`（端点总目录）+ `docs/reference/task-lifecycle.md`（SSE/任务时序）— 先定位
+- `docs/reference/capabilities.md`（平台能做什么）+ `docs/reference/api-index.md`（端点总目录）+ `docs/reference/task-lifecycle.md`（SSE/任务时序）— 先定位
 - `upstream-docs/infinisynapse-site/zh/markdown/server-api-reference.md` — 详细原文
 - `upstream-docs/infinisynapse-site/markdown/server-api-reference.md` 作为英文补充参考
 - `docs/QUICK-REFERENCE.md`

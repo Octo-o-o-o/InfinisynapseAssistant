@@ -8,10 +8,11 @@
 1. AGENTS.md — 跨工具单一通用入口与硬约束
 2. docs/CONTENT-MODEL.md — 内容类型、维护边界、RAG/文件放置规则
 3. docs/README.md — 人类友好的文档导航和目录分层
-4. docs/reference/api-index.md — 端点总目录（事实基准）
-5. docs/reference/task-lifecycle.md — SSE 事件 / 消息类型 / 长任务时序 / 恢复
-6. docs/playbooks/ — RAG、文件放置等核心场景的特定用法
-7. 任务对应的 skill（见下）
+4. docs/reference/capabilities.md — 平台能力总览（能力→端点）
+5. docs/reference/api-index.md — 端点总目录（事实基准）
+6. docs/reference/task-lifecycle.md — SSE 事件 / 消息类型 / 长任务时序 / 恢复
+7. docs/playbooks/ — RAG/文件放置、报错排查等核心场景的特定用法
+8. 任务对应的 skill（见下）
 
 ## 七条硬约束
 

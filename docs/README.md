@@ -7,10 +7,12 @@
 | 目标 | 先读 | 再读 |
 | --- | --- | --- |
 | 快速理解项目 | `README.md` | `docs/USAGE-GUIDE.md`, `docs/PROJECT-ARCHITECTURE.md` |
+| 了解平台能做什么 | `docs/reference/capabilities.md` | `docs/reference/api-index.md`, `docs/reference/task-lifecycle.md` |
 | 快速查接口和红线 | `docs/QUICK-REFERENCE.md` | `docs/reference/api-index.md`, `docs/reference/task-lifecycle.md` |
 | 让 AI 助手接手开发 | `AGENTS.md`, `llms.txt` | 对应 `.agents/skills/*/SKILL.md` |
 | 判断内容应该放哪里 | `docs/CONTENT-MODEL.md` | 本文件的“维护边界” |
 | 处理 RAG 和文件放置 | `docs/playbooks/rag-file-placement.md` | `docs/reference/api-index.md` 中 RAG/上传/下载端点 |
+| 排查报错 / 部署登录失败 | `docs/playbooks/troubleshooting.md` | `infinisynapse-deployment` skill |
 | 核对官方来源 | `docs/SOURCE-AUDIT.md` | `upstream-docs/infinisynapse-site/zh/markdown/` |
 
 ## 目录分层

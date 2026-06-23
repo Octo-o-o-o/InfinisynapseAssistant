@@ -3,6 +3,20 @@
 本项目变更记录，遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 版本对应规则包成熟度，不对应 InfiniSynapse 官方版本。
 
+## [0.3.1] - 2026-06-23
+
+按内容模型沉淀文档；对齐 `docs/playbooks/` 结构。
+
+### Added
+- `docs/reference/capabilities.md`：InfiniSynapse 能力总览（能力→端点的事实索引，补 api-index 的"端点视角"所缺的"能力视角"），端点经上游文档逐条核对。
+- `docs/playbooks/troubleshooting.md`：跨 Server API / 私有化部署 / CLI 的症状→原因→处理排查表（此前散落各处）。
+
+### Changed
+- `docs/README.md` 导航、`AGENTS.md` 参考表、`llms.txt` 阅读顺序接入两份新文档。
+- `infinisynapse-server-api` skill 先读加入 capabilities；`infinisynapse-deployment` skill 先读加入 troubleshooting。
+- `tools/doctor.sh` 检查新文档存在。
+- 结构判断：当前 `docs/` 分层（reference 事实 / playbooks 特定用法 / proposals 方案 + README 导航）已最合理，未重构，新文档对齐落位。
+
 ## [0.3.0] - 2026-06-23
 
 SSE 重连完整实现，并修复 SDK 在 Node strip-types 下无法 import 的可移植性 bug。

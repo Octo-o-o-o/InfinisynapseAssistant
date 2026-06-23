@@ -35,9 +35,11 @@ require_file "upstream-docs/infinisynapse-site/assets/docs/server-api/api-key-ma
 require_file "upstream-docs/infinisynapse-site/assets/docs/server-api/api-key-management-page.png"
 require_file "upstream-docs/infinisynapse-site/assets/docs/server-api/compute-resource-selector.png"
 
-# 规范参考
+# 规范参考与 playbooks
 require_file "docs/reference/api-index.md"
 require_file "docs/reference/task-lifecycle.md"
+require_file "docs/reference/capabilities.md"
+require_file "docs/playbooks/troubleshooting.md"
 
 # 钩子与扫描器
 require_file "tools/hooks/post-edit.sh"

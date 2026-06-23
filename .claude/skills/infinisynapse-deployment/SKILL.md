@@ -15,6 +15,7 @@ description: |
 - `upstream-docs/infinisynapse-site/zh/markdown/private-deployment-guide.md`
 - `upstream-docs/infinisynapse-site/markdown/private-deployment-guide.md` 作为英文补充参考
 - `docs/QUICK-REFERENCE.md`
+- `docs/playbooks/troubleshooting.md`（部署登录失败 / OOM / 端口冲突排查）
 - `docs/SOURCE-AUDIT.md`
 
 ## 核心 checklist
