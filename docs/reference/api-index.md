@@ -39,11 +39,11 @@
 | --- | --- | --- | --- |
 | `newTask` | `text` | `taskId`,`connId`,`images`,`files`,`autoApprovalSettings`,`chatSettings` | 新建任务（会做扣费校验与幂等） |
 | `askResponse` | `taskId`,`askResponse` | `text`,`images`,`files`,`connId` | 回复 Agent 提问；`askResponse` 一般为 `messageResponse` |
-| `cancelTask` | `taskId` | - | 取消运行中任务（旧客户端写法） |
+| `cancelTask` | `taskId` | - | 取消运行中任务（推荐路径） |
 | `clearTask` | - | `taskId` | 清除任务；不传清空全部 |
 | `optionsResponse` | `taskId`,`connId`,`text` | - | 多选项回复 |
-| `togglePlanActMode` | `chatSettings` | `taskId` | 切换规划/执行模式 |
-| `autoApprovalSettings` | `autoApprovalSettings` | - | 更新自动审批配置 |
+| `togglePlanActMode` | `chatSettings` | `taskId`,`connId` | 切换规划/执行模式 |
+| `autoApprovalSettings` | `autoApprovalSettings` | `taskId`,`connId` | 更新自动审批配置；建任务前可先发全局/连接级设置，执行阶段建议带任务上下文 |
 | `rollbackToSnapshot` | `taskId`,`snapshotTs` | - | 回滚到快照 |
 | `rollbackAndSendMessage` | `taskId`,`snapshotTs`,`text` | `images`,`files` | 回滚并发消息 |
 | `editFirstMessageAndResend` | `taskId`,`text` | `images`,`files` | 编辑首条并重发 |
@@ -62,7 +62,7 @@
 | `/api/ai_task/messagePayload?taskId=&messageTs=` | GET | 单条消息完整 `text`（未瘦身） |
 | `/api/ai_task/getTaskWorkspace/:id` | GET | 工作目录 + 文件列表 `{ cwd, files }`（**发现产物首选**） |
 | `/api/ai_task/deleteTaskWithId` | POST | `{ ids: [] }` 批量删除 |
-| `/api/ai_task/cancelTask?taskId=` | GET 或 POST | 取消任务（`taskId` 走 Query） |
+| `/api/ai_task/cancelTask?taskId=` | GET 或 POST | 旧取消入口（`taskId` 走 Query）；部分部署可能不可用，产品集成优先用 `/api/ai/message` `type=cancelTask` |
 | `/api/ai_task/rerunSqlTask` | POST | `{ id, chat_index }` |
 | `/api/ai_task/runExtractSql` | POST | `{ variables, register_tables, databases, sqls }` |
 | `/api/ai_task/saveToRag` | POST | `{ taskId, action: save\|remove }` |
@@ -161,6 +161,7 @@
 | HTTP `400` | 业务校验失败（文件超限、命名非法、无文件等） |
 | HTTP `404` | 资源不存在或无权访问 |
 | SSE 无数据 | 检查 `Authorization` 与网络，确认**先连 SSE 再发消息** |
+| SSE `message.ask=api_req_failed` 且文本含 `Insufficient account balance` | 账户余额/额度不足；充值或更换有余额的 API Key 后重试 |
 
 ## 标注「二进制」的端点清单（不要当 JSON 解析）
 

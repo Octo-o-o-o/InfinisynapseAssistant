@@ -14,9 +14,11 @@
 
 ## 两段式流程
 
-1. **计划阶段**：建任务时 `chatSettings: { "mode": "plan" }`，prompt 要求 Agent 先列出"将访问的 URL、将读取的文件、拟产出文件、风险点"，**不实际执行**。
+1. **计划阶段**：建任务前先收紧 `autoApprovalSettings`（关闭 web/browser/native tool 等执行能力），再建任务并带 `chatSettings: { "mode": "plan" }`。prompt 要求 Agent 先列出"将访问的 URL、将读取的文件、拟产出文件、风险点"，**不实际执行**。
 2. **用户确认**：前端展示计划，用户 approve / reject / 修改。
-3. **执行阶段**：`POST /api/ai/message` `type=togglePlanActMode` 切到 act（或后续消息带 `chatSettings.mode="act"`），Agent 才实际执行。
+3. **执行阶段**：approve 后先确认 SSE consumer 已连接，再放宽低风险只读/生成动作的 `autoApprovalSettings`，`POST /api/ai/message` `type=togglePlanActMode` 切到 act（或后续消息带 `chatSettings.mode="act"`），随后 `askResponse` 发送执行 prompt，Agent 才实际执行。
+
+> 实测注意：`newTask.chatSettings.mode="plan"` 和随 `newTask` 携带的 `autoApprovalSettings` 在部分环境里不一定反映到可见运行状态。更稳的做法是先单独发送 `type=autoApprovalSettings`，计划 prompt 中明确"若系统要求工具，唯一允许 `plan_mode_response` 提交计划"，并把 `message.ask==="plan_mode_response"` 或符合固定结构的计划正文视为"等待人工审批"信号。
 
 ## 风险动作分级（决策表）
 
@@ -35,7 +37,7 @@
 | --- | --- |
 | `POST /api/ai/message` `{type:"newTask", chatSettings:{mode:"plan"\|"act"}}` | 建任务时指定模式 |
 | `POST /api/ai/message` `{type:"togglePlanActMode", chatSettings, taskId?}` | 计划↔执行切换 |
-| `POST /api/ai/message` `{type:"autoApprovalSettings", autoApprovalSettings}` | 更新自动审批配置 |
+| `POST /api/ai/message` `{type:"autoApprovalSettings", autoApprovalSettings, taskId?, connId?}` | 更新自动审批配置 |
 
 ## 常见反模式
 
@@ -43,6 +45,8 @@
 - 把登录 / 投递 / 公开分享也设成自动审批。
 - "计划阶段"就实际访问了网页或提交了表单（计划应只读、不产生副作用）。
 - 自动审批放得过宽，等于回到黑盒执行。
+- 计划阶段收到 `plan_mode_response` 后仍继续等待 `completion_result`，导致业务任务卡在 planning。
+- approve 后没有重新建立/确认 SSE，导致 act 阶段实际运行但业务后端收不到产物完成事件。
 
 ## 检查清单
 
@@ -50,3 +54,5 @@
 - 用户能否在执行**前**看到 Agent 的计划？
 - `autoApprovalSettings` 是否只放宽了低风险的只读 / 生成动作？
 - 计划阶段是否真的"只说不做"？
+- 是否把 `plan_mode_response` 和 success notification 纳入状态机？
+- approve 后是否在 `togglePlanActMode`/`askResponse` 前确认 SSE 已连接？

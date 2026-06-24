@@ -17,6 +17,7 @@
 - `docs/playbooks/secure-integration.md` 的"服务端必须托管的状态"升级为可直接照搬的 `agent_tasks` 映射表（两个产品独立收敛）。
 - `docs/README.md`、`AGENTS.md`、`llms.txt`、`tools/doctor.sh` 接入 plan-act-approval playbook；AGENTS §8 规则表加入 `INF-API-001`。
 - `tools/doctor.sh` / `tools/test-suite.sh` 将维护手册、官网链接、npm 使用边界、skill 添加方式和老项目流程纳入验证。
+- 反哺真实消费项目 smoke：补充 plan/act 下 `plan_mode_response`、success notification 完成信号、`api_req_failed` 失败信号、按 `taskId` 过滤 SSE、approve 前恢复 SSE、`cancelTask` 优先走 `/api/ai/message` 的接入建议。
 
 ## [0.3.5] - 2026-06-24
 
