@@ -18,7 +18,9 @@
 2. **用户确认**：前端展示计划，用户 approve / reject / 修改。
 3. **执行阶段**：approve 后先确认 SSE consumer 已连接，再放宽低风险只读/生成动作的 `autoApprovalSettings`，`POST /api/ai/message` `type=togglePlanActMode` 切到 act（或后续消息带 `chatSettings.mode="act"`），随后 `askResponse` 发送执行 prompt，Agent 才实际执行。
 
-> 实测注意：`newTask.chatSettings.mode="plan"` 和随 `newTask` 携带的 `autoApprovalSettings` 在部分环境里不一定反映到可见运行状态。更稳的做法是先单独发送 `type=autoApprovalSettings`，计划 prompt 中明确"若系统要求工具，唯一允许 `plan_mode_response` 提交计划"，并把 `message.ask==="plan_mode_response"` 或符合固定结构的计划正文视为"等待人工审批"信号。
+> 实测注意：`newTask.chatSettings.mode="plan"` 和随 `newTask` 携带的 `autoApprovalSettings` 在部分环境里不一定反映到可见运行状态。更稳的做法是先单独发送 `type=autoApprovalSettings`，计划 prompt 中明确"若系统要求工具，唯一允许 `plan_mode_response` 提交计划，且必须填写非空 `response`"，并把非空 `message.ask==="plan_mode_response"` 或符合固定结构的计划正文视为"等待人工审批"信号。不要把 prompt 回显、空 `response` 或工具重试片段当作计划完成。
+
+> 严格 schema 产物经验：执行 prompt 若要求 Agent 写 JSON，并且下游会做 schema 校验，必须列出逐字字段名和禁止别名。真实消费项目里，模型容易把 `id/label/score0To5/status/reason/title/probability/mitigation` 写成 `name/score/passed/detail/description` 等自然字段；后端应继续严格校验，prompt 负责减少重试。
 
 ## 风险动作分级（决策表）
 
@@ -46,6 +48,8 @@
 - "计划阶段"就实际访问了网页或提交了表单（计划应只读、不产生副作用）。
 - 自动审批放得过宽，等于回到黑盒执行。
 - 计划阶段收到 `plan_mode_response` 后仍继续等待 `completion_result`，导致业务任务卡在 planning。
+- 把空 `plan_mode_response` 或回显的原始 prompt 当成计划完成，导致过早 approve。
+- 只描述 JSON schema 的语义，不写逐字字段名，导致 Agent 输出字段别名而 schema 校验失败。
 - approve 后没有重新建立/确认 SSE，导致 act 阶段实际运行但业务后端收不到产物完成事件。
 
 ## 检查清单

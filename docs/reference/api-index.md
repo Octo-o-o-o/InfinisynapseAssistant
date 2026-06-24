@@ -60,7 +60,7 @@
 | `/api/ai_task/showTaskWithId/:id` | GET | 任务详情 |
 | `/api/ai_task/getUiMessageById?id=` | GET | 瘦身后的 UI 消息列表（**恢复进度首选**） |
 | `/api/ai_task/messagePayload?taskId=&messageTs=` | GET | 单条消息完整 `text`（未瘦身） |
-| `/api/ai_task/getTaskWorkspace/:id` | GET | 工作目录 + 文件列表 `{ cwd, files }`（**发现产物首选**） |
+| `/api/ai_task/getTaskWorkspace/:id` | GET | 工作目录 + 文件列表 `{ cwd, files }`（**发现产物首选**）；实测 `files` 可能是字符串路径数组，也可能是文件对象数组，消费端要先归一化路径 |
 | `/api/ai_task/deleteTaskWithId` | POST | `{ ids: [] }` 批量删除 |
 | `/api/ai_task/cancelTask?taskId=` | GET 或 POST | 旧取消入口（`taskId` 走 Query）；部分部署可能不可用，产品集成优先用 `/api/ai/message` `type=cancelTask` |
 | `/api/ai_task/rerunSqlTask` | POST | `{ id, chat_index }` |
