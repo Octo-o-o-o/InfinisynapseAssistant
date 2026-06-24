@@ -301,14 +301,30 @@ export class InfiniSynapseClient {
       throw new InfiniSynapseError(`Non-JSON upload response (HTTP ${res.status})`, { httpStatus: res.status });
     }
     const env = parsed as Partial<Envelope<T>>;
-    if (!res.ok) {
-      throw new InfiniSynapseError((env?.message as string) || `Upload failed HTTP ${res.status}`, {
+    const code = env?.code;
+    if (typeof code === "number" && TOKEN_INVALID_CODES.includes(code)) {
+      throw new InfiniSynapseError(`API Key expired or invalid (code ${code})`, {
         httpStatus: res.status,
-        code: env?.code,
+        code,
+        tokenInvalid: true,
         body: parsed,
       });
     }
-    return (env && "data" in env ? env.data : parsed) as T;
+    if (!res.ok) {
+      throw new InfiniSynapseError((env?.message as string) || `Upload failed HTTP ${res.status}`, {
+        httpStatus: res.status,
+        code,
+        body: parsed,
+      });
+    }
+    if (typeof code === "number" && code !== 200) {
+      throw new InfiniSynapseError((env?.message as string) || `upload business error code ${code}`, {
+        httpStatus: res.status,
+        code,
+        body: parsed,
+      });
+    }
+    return (env && "data" in env && code === 200 ? env.data : parsed) as T;
   }
 
   // ---------- 下载（二进制，不走信封）----------

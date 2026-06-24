@@ -21,6 +21,11 @@
 - 反哺 InfiProject 端到端 smoke：补充 `getTaskWorkspace.files` 字符串/对象两种形态、空 `plan_mode_response`/prompt 回显不能触发审批、严格 JSON schema prompt 要列逐字字段名并禁止别名。
 - 反哺真实 smoke 长文件循环：明确 bounded artifacts、业务总超时、失败取消、usage 记录和 workspace 恢复策略，避免把 smoke 当完整报告生成导致截断/补写循环。
 
+### Fixed
+- TS/Python SDK multipart 上传现在和普通请求一致处理业务信封：`code !== 200`、token 失效码和 HTTP 错误都会抛 `InfiniSynapseError`，避免 HTTP 200 的上传业务错误被误当成功。
+- 扫描器 `INF-ENV-003` 收紧 `AUTHING_SERVER_URL` 路径判断：只接受裸 `/api`，`/api/`、`/apix` 或其它路径都会提示。
+- 清理 `docs/playbooks/downstream-projects.md` EOF 多余空行，保证 `git diff --check` 通过。
+
 ## [0.3.5] - 2026-06-24
 
 全项目审查（两路独立 agent + 自查）后修复真实代码 bug 与文档陈旧。

@@ -1,5 +1,6 @@
 """离线 SSE 解析器单测，不触网。运行：python3 -m unittest test_sse.py"""
 import unittest
+from unittest.mock import patch
 
 from infinisynapse_client import (
     ClientConfig, InfiniSynapseClient, InfiniSynapseError,
@@ -146,6 +147,28 @@ class TestClientCancel(unittest.TestCase):
             "query": {"taskId": "task-1"},
             "body": None,
         })
+
+    def test_multipart_upload_rejects_business_error_envelope(self):
+        client = InfiniSynapseClient(ClientConfig(api_key="server-only-test-key", base_url="https://example.invalid"))
+
+        class FakeResponse:
+            status = 200
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+            def read(self):
+                return b'{"code":500,"message":"upload denied"}'
+
+        with patch("urllib.request.urlopen", return_value=FakeResponse()):
+            with self.assertRaises(InfiniSynapseError) as ctx:
+                client.task_upload("task-1", b"x", "a.txt")
+
+        self.assertEqual(ctx.exception.code, 500)
+        self.assertEqual(str(ctx.exception), "upload denied")
 
 
 if __name__ == "__main__":

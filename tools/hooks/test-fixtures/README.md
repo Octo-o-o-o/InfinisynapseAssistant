@@ -7,6 +7,7 @@
 | `bad-hardcoded-key.ts` | 2 | INF-SEC-001（硬编码 Bearer） |
 | `bad-frontend-direct.tsx` | 2 | INF-SEC-002（前端直连）+ INF-SSE-001 |
 | `bad-authing.env` | 2 | INF-ENV-001/002/003 |
+| `bad-authing-path.env` | 1 | INF-ENV-003（AUTHING_SERVER_URL 路径不是裸 /api） |
 | `bad-newtask-no-sse.ts` | 1 | INF-SSE-001（newTask 未先连 SSE） |
 | `bad-download-as-json.ts` | 1 | INF-DL-001（下载当 JSON） |
 | `good-server-proxy.ts` | 0 | 干净（后端代理 + 先连 SSE） |

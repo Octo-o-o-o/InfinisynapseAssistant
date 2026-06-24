@@ -140,9 +140,12 @@ while IFS= read -r m; do
   fi
   # 路径必须是裸 /api（不带尾部斜杠，且确实含 /api）
   if printf '%s' "$val" | grep -qE '://'; then
-    if printf '%s' "$val" | grep -qE '/api/+$|/api/$'; then
+    val_no_fragment="${val%%#*}"
+    val_no_query="${val_no_fragment%%\?*}"
+    path_part="$(printf '%s' "$val_no_query" | sed -E 's#^[A-Za-z][A-Za-z0-9+.-]*://[^/]*##')"
+    if [[ "$path_part" == "/api/" ]]; then
       add_finding "INF-ENV-003" "MEDIUM" "$ln" "AUTHING_SERVER_URL 末尾不要带斜杠（应以 /api 结尾）"
-    elif ! printf '%s' "$val" | grep -qE '/api($|[^/])'; then
+    elif [[ "$path_part" != "/api" ]]; then
       add_finding "INF-ENV-003" "MEDIUM" "$ln" "AUTHING_SERVER_URL 路径应为 /api"
     fi
   fi

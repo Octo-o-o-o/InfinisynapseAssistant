@@ -29,6 +29,9 @@ if [ -f "$SCANNER" ]; then
   assert_exit "tools/hooks/test-fixtures/bad-authing.env" 2
   assert_contains_rule "tools/hooks/test-fixtures/bad-authing.env" "INF-ENV-001"
   assert_contains_rule "tools/hooks/test-fixtures/bad-authing.env" "INF-ENV-002"
+  assert_contains_rule "tools/hooks/test-fixtures/bad-authing.env" "INF-ENV-003"
+  assert_exit "tools/hooks/test-fixtures/bad-authing-path.env" 1
+  assert_contains_rule "tools/hooks/test-fixtures/bad-authing-path.env" "INF-ENV-003"
   assert_exit "tools/hooks/test-fixtures/bad-newtask-no-sse.ts" 1
   assert_contains_rule "tools/hooks/test-fixtures/bad-newtask-no-sse.ts" "INF-SSE-001"
   assert_exit "tools/hooks/test-fixtures/bad-download-as-json.ts" 1

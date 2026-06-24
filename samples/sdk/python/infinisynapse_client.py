@@ -290,10 +290,18 @@ class InfiniSynapseClient:
             parsed = json.loads(raw) if raw else {}
         except json.JSONDecodeError:
             raise InfiniSynapseError(f"Non-JSON upload response (HTTP {status})", http_status=status, body=raw[:500])
+        code = parsed.get("code") if isinstance(parsed, dict) else None
+        if code in TOKEN_INVALID_CODES:
+            raise InfiniSynapseError(f"API Key expired or invalid (code {code})", http_status=status,
+                                     code=code, token_invalid=True, body=parsed)
         if status >= 400:
             msg = parsed.get("message") if isinstance(parsed, dict) else None
-            raise InfiniSynapseError(msg or f"upload failed HTTP {status}", http_status=status, body=parsed)
-        if isinstance(parsed, dict) and "data" in parsed:
+            raise InfiniSynapseError(msg or f"upload failed HTTP {status}", http_status=status, code=code, body=parsed)
+        if code is not None and code != 200:
+            msg = parsed.get("message") if isinstance(parsed, dict) else None
+            raise InfiniSynapseError(msg or f"upload business error code {code}", http_status=status,
+                                     code=code, body=parsed)
+        if isinstance(parsed, dict) and "data" in parsed and code == 200:
             return parsed["data"]
         return parsed
 
