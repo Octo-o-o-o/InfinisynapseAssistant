@@ -22,6 +22,14 @@
 
 > 严格 schema 产物经验：执行 prompt 若要求 Agent 写 JSON，并且下游会做 schema 校验，必须列出逐字字段名和禁止别名。真实消费项目里，模型容易把 `id/label/score0To5/status/reason/title/probability/mitigation` 写成 `name/score/passed/detail/description` 等自然字段；后端应继续严格校验，prompt 负责减少重试。
 
+## 真实 smoke 与 bounded artifacts
+
+真实集成 smoke 的目标是验证"先 SSE → plan → 人工审批 → act → workspace 产物 → schema 校验 → 私密下载"闭环，不是生成完整业务报告。默认 smoke 应选择小型公开目标，关闭 Browser/RAG/数据源，使用短 prompt 和固定小产物。
+
+执行 prompt 要写清硬上限：固定文件名、每个 Markdown 的字符上限、JSON 记录条数上限、schema 字段逐字匹配、先写固定产物再 completion。否则 Agent 容易在 `write_to_file` / `replace_in_file` 中反复修补长文件，出现截断、缺参数或补写循环，导致 smoke 拖到超时并持续消耗调用。
+
+后端 smoke runner 也要有工程护栏：业务总超时、失败/超时后 `cancelTask`、usage ledger、脱敏事件样本、以及 timeout/failure 后先 `getTaskWorkspace` 恢复已有产物并做 schema 校验。已有必需产物全部有效时可以归档为成功；产物不完整时标记失败并保留安全错误。
+
 ## 风险动作分级（决策表）
 
 | 动作 | 风险 | 审批 |
@@ -50,6 +58,7 @@
 - 计划阶段收到 `plan_mode_response` 后仍继续等待 `completion_result`，导致业务任务卡在 planning。
 - 把空 `plan_mode_response` 或回显的原始 prompt 当成计划完成，导致过早 approve。
 - 只描述 JSON schema 的语义，不写逐字字段名，导致 Agent 输出字段别名而 schema 校验失败。
+- 把真实 smoke 当完整报告生成，让 Agent 写长 Markdown/JSON，触发截断补写循环和额外消耗。
 - approve 后没有重新建立/确认 SSE，导致 act 阶段实际运行但业务后端收不到产物完成事件。
 
 ## 检查清单
@@ -60,3 +69,4 @@
 - 计划阶段是否真的"只说不做"？
 - 是否把 `plan_mode_response` 和 success notification 纳入状态机？
 - approve 后是否在 `togglePlanActMode`/`askResponse` 前确认 SSE 已连接？
+- 真实 smoke 是否设置了小产物硬上限、总超时、失败取消和 workspace 恢复？

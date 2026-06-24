@@ -17,6 +17,7 @@
 | 下载到一堆"乱码 JSON" | 把二进制下载端点当 JSON 解析 | `downloadTaskFile`/`downloadZip`/`storage/download` 是二进制流，`-o file` 存盘 |
 | Agent "看不到"数据源/知识库 | 资源没在建任务前启用 | `newTask` 前先 `list` + `enabled`（市场资源先订阅） |
 | Agent 要文件但任务卡住 | 收到 `upload_file_to_sandbox` 没应答 | 先 `/api/ai/upload?taskId=` 上传，再 `askResponse` 回传结果 |
+| Agent 反复修补被截断文件 / 写文件工具缺参数 | 产物过长、schema 字段不够明确，或 smoke 用例要求完整报告 | 收紧 prompt：固定小文件、字符/条数上限、逐字字段名；设置总超时并 `cancelTask`；随后用 `getTaskWorkspace` 恢复已有产物 |
 | RAG 建库后检索不到本机文件 | SaaS 读不到本机路径 | `docDir` 必须是 InfiniSynapse 可访问位置；详见 [rag-file-placement.md](rag-file-placement.md) |
 
 ## 私有化部署专项

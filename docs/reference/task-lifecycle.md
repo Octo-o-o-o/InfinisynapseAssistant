@@ -104,6 +104,8 @@ GET /api/ai_task/getTaskWorkspace/:taskId       # 重新枚举产物
 - **阶段切换后继续消费**：plan 阶段为了进入人工审批可能会停止当前 consumer；approve 后、发送 act prompt 前要重新建立/确认 SSE consumer。
 - **首事件超时**：连上 SSE 后等 `state.ready` 设 2~3s 超时兜底，超时也继续发 `newTask`（文档允许）。
 - **心跳**：`heartbeat` 仅保活；长时间无任何事件（含心跳）才判定连接死亡。
+- **业务总超时**：除 SSE idle timeout 外，产品层还要有总耗时/调用次数预算。超时或进入工具补写循环时，先落库错误与 usage，再调用 `/api/ai/message` `type=cancelTask`，避免继续消耗。
+- **超时恢复**：取消或失败后不要只丢弃任务；先用 `getTaskWorkspace` 枚举已有产物，`previewFile` 校验必需文件和 schema。产物完整可按业务规则归档，产物不完整则保留失败状态和可审计错误。
 - **错误即终止**：`notification.type==='error'`、`message.ask==='api_req_failed'` 或信封 `code` 非 200 要终止并落库。`Insufficient account balance` 属于账户余额/额度问题，需要换 Key 或充值后重试。
 - **下载是二进制**：`downloadTaskFile`/`downloadZip`/`storage/download` 返回流，不要按 `{code,message,data}` 解析（见 api-index.md 末尾清单）。
 - **资源先于任务**：数据库/RAG 要在 `newTask` **之前** list+enabled，否则 Agent 看不到。
