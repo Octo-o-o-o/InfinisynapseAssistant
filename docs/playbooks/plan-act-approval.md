@@ -22,6 +22,8 @@
 
 > 严格 schema 产物经验：执行 prompt 若要求 Agent 写 JSON，并且下游会做 schema 校验，必须列出逐字字段名和禁止别名。真实消费项目里，模型容易把 `id/label/score0To5/status/reason/title/probability/mitigation` 写成 `name/score/passed/detail/description` 等自然字段；后端应继续严格校验，prompt 负责减少重试。
 
+> approve 后执行 prompt 经验：产品侧已经完成人工审批并切到 act 后，执行 prompt 要明确"不要再调用 `plan` / `switch_mode` / `plan_mode_response` / `update_plan` 或模式切换工具，直接执行已批准计划"。真实 smoke 中，若 act prompt 被上游当作新请求，Agent 可能先尝试内部计划工具；参数不完整时会进入工具重试循环并触发 `notification.type=error`。
+
 ## 成熟产品状态机
 
 把 plan/act 接入已有产品时，不要只靠内存或前端按钮状态。业务库至少要能区分 `planning`、`waiting_user`、`running`、`completed`、`failed`、`cancelled`，并保存 `plan_requested_at`、`plan_received_at`、`plan_approved_at`、`act_sent_at` 或等价审计字段。
@@ -66,6 +68,7 @@
 - 只描述 JSON schema 的语义，不写逐字字段名，导致 Agent 输出字段别名而 schema 校验失败。
 - 把真实 smoke 当完整报告生成，让 Agent 写长 Markdown/JSON，触发截断补写循环和额外消耗。
 - approve 后没有重新建立/确认 SSE，导致 act 阶段实际运行但业务后端收不到产物完成事件。
+- approve 后的执行 prompt 没有禁止 `plan` / `switch_mode` / `plan_mode_response` 等模式工具，导致 Agent 回到计划工具循环而不是直接执行已批准计划。
 - `waiting_user` 不计入活跃任务，导致同一用户在计划待审期间继续创建多个高成本任务。
 - 队列复用同一个已完成 job，approve 后没有真正启动 act worker。
 
