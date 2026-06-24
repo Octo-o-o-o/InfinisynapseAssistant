@@ -45,6 +45,7 @@ x-lang: zh_CN
 5. 用 `GET /api/ai_task/getTaskWorkspace/:id` 查看产物
 6. 用 `POST /api/ai_task/previewFile` 预览
 7. 用 `GET /api/tools/storage/downloadTaskFile/:taskId?path=` 下载
+8. 取消时优先 `POST /api/ai/message`，`type=cancelTask`
 
 ## 上传模式
 

@@ -2,6 +2,7 @@
 import unittest
 
 from infinisynapse_client import (
+    ClientConfig, InfiniSynapseClient, InfiniSynapseError,
     SseParser, parse_sse_data, is_completion, TextAccumulator,
     next_backoff_seconds, select_missed_messages,
 )
@@ -102,6 +103,49 @@ class TestReconnect(unittest.TestCase):
         self.assertEqual([m["ts"] for m in select_missed_messages({"messages": msgs}, {1})], [2, 3])
         self.assertEqual(select_missed_messages({"data": {"messages": msgs}}, {1, 2, 3}), [])
         self.assertEqual(select_missed_messages(None, set()), [])
+
+
+class TestClientCancel(unittest.TestCase):
+    def test_cancel_task_uses_message_endpoint_first(self):
+        client = InfiniSynapseClient(ClientConfig(api_key="server-only-test-key", base_url="https://example.invalid"))
+        calls = []
+
+        def fake_request(method, path, *, query=None, body=None):
+            calls.append({"method": method, "path": path, "query": query, "body": body})
+            return {"success": True}
+
+        client._request = fake_request
+
+        client.cancel_task("task-1")
+
+        self.assertEqual(calls, [{
+            "method": "POST",
+            "path": "/api/ai/message",
+            "query": None,
+            "body": {"type": "cancelTask", "taskId": "task-1"},
+        }])
+
+    def test_cancel_task_falls_back_when_message_endpoint_unavailable(self):
+        client = InfiniSynapseClient(ClientConfig(api_key="server-only-test-key", base_url="https://example.invalid"))
+        calls = []
+
+        def fake_request(method, path, *, query=None, body=None):
+            calls.append({"method": method, "path": path, "query": query, "body": body})
+            if len(calls) == 1:
+                raise InfiniSynapseError("not found", http_status=404)
+            return {"success": True}
+
+        client._request = fake_request
+
+        client.cancel_task("task-1")
+
+        self.assertEqual(calls[0]["path"], "/api/ai/message")
+        self.assertEqual(calls[1], {
+            "method": "GET",
+            "path": "/api/ai_task/cancelTask",
+            "query": {"taskId": "task-1"},
+            "body": None,
+        })
 
 
 if __name__ == "__main__":

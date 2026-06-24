@@ -14,7 +14,7 @@
 | Agent 执行中要求补文件 | 当前任务 sandbox | `POST /api/ai/upload?taskId=`，随后用 `askResponse` 继续 | 只在 SSE 中收到文件请求时使用。 |
 | 长期 RAG 知识库 | InfiniSynapse 可访问的 RAG `docDir`，或 OSS/S3/file 后端 | `/api/ai_rag_sdk/create`, `/api/ai_rag_sdk/enabled`, `/api/ai_rag_sdk/fileTree` | 适合可复用知识库、公司资料、长期产品文档。 |
 | 结构化表格或数据库文件 | 任务 workspace 临时分析，或数据源/数据库 | `/api/tools/taskUpload/:taskId`, `/api/ai_database/upload/:databaseId` | 取决于是否需要长期复用和结构化查询。 |
-| 任务生成的报告、图表、附件 | 当前任务 workspace | `getTaskWorkspace`, `previewFile`, `downloadTaskFile`, `downloadZip` | 完成后不要只读最后一条文本，要枚举 workspace。 |
+| 任务生成的报告、图表、附件 | 当前任务 workspace；成熟产品再归档到自有 artifact store | `getTaskWorkspace`, `previewFile`, `downloadTaskFile`, `downloadZip` | 完成后不要只读最后一条文本，要枚举 workspace。需要产品历史、下载 SLA 或合规审计时，保存 provider path + 自有 storage key。 |
 
 ## SaaS 版本的边界
 
@@ -31,6 +31,8 @@
 3. 先建立 `/api/ai/events?connId=...` SSE。
 4. 再发送 `/api/ai/message` 的 `newTask`，提示 Agent 使用当前任务 workspace 中的 `upload_documents`。
 5. 完成后用 `getTaskWorkspace` 枚举产物，用 `previewFile` 或 `downloadTaskFile` 读取结果。
+
+如果这是面向用户的正式产品能力，完成后还应把最终交付物复制到自有对象存储或文件服务。InfiniSynapse workspace path 适合作为来源索引；业务下载、权限校验、留存策略和删除策略应优先走自有 artifact 记录。PDF/DOCX/ZIP/图片等下载结果是二进制流，归档和转发时不要按 JSON 信封解析。
 
 ### 长期知识库问答
 
@@ -52,6 +54,7 @@
 - 把一次性任务资料做成长期 RAG，导致知识库污染和权限边界变复杂。
 - Agent 没有请求文件时滥用 `/api/ai/upload`。
 - 上传了输入资料，但任务完成后只读最后一条 SSE 文本，不检查 workspace 产物。
+- 只保存 InfiniSynapse workspace path，不归档关键交付物，导致业务历史下载依赖执行侧 workspace 的长期可用性。
 - 创建任务后才临时启用 RAG 或数据源，导致 Agent 本轮任务不可见。
 
 ## 检查清单
@@ -62,3 +65,4 @@
 - 上传接口是主动归档到 workspace，还是响应 Agent 的 sandbox 请求？
 - RAG 或数据源是否在 `newTask` 前已经启用？
 - 任务完成后是否读取了 workspace 产物？
+- 正式产品的关键产物是否已归档到自有 artifact store，并保留 provider path？

@@ -42,7 +42,7 @@ Frontend -> Product API -> AgentTaskService / InfiniSynapseAdapter -> InfiniSyna
 - 生成并持久化 `taskId`、`connId`、业务输入快照、上传映射、workspace 文件索引、错误信息。
 - 先连 SSE，再发送 `newTask`。
 - 把 InfiniSynapse SSE 转成自有产品的任务状态和前端进度。
-- 完成后读取 `getTaskWorkspace` / `previewFile` / `downloadTaskFile`，保存产物索引。
+- 完成后读取 `getTaskWorkspace` / `previewFile` / `downloadTaskFile`，保存产物索引；需要产品历史、下载 SLA 或合规审计时，把最终产物复制到自有 artifact store。
 
 ## 分阶段路线
 
@@ -54,15 +54,16 @@ Frontend -> Product API -> AgentTaskService / InfiniSynapseAdapter -> InfiniSyna
 2. 新建自有 `AgentTask` 表，保存 `taskId`、`connId`、输入哈希、状态、workspace snapshot、错误。
 3. API route 只创建业务任务和入队，不在请求线程里跑完整长任务。
 4. Worker 先建立 SSE，再发 `newTask`，实时落库进度。
-5. 完成后读取 workspace，形成业务可展示的 artifact 记录。
+5. 完成后读取 workspace，形成业务可展示的 artifact 记录；重要交付物归档到自有对象存储，InfiniSynapse workspace path 作为来源索引。
 6. 前端只展示自有业务任务 ID，不让用户直接调用 InfiniSynapse endpoint。
 
 ### P1：恢复、复用和取消
 
 - 用 `input_hash` 做同用户同输入去重：已完成任务可复用，进行中任务返回已有记录。
-- 支持 `cancelTask`，并在自有数据库标记 `cancelled`。
+- 支持 `/api/ai/message` `type=cancelTask`，并在自有数据库标记 `cancelled`；旧 `/api/ai_task/cancelTask` 只作为兼容 fallback。
 - worker 崩溃后先查 `getUiMessageById` 和 `getTaskWorkspace`，不要盲目重发 `newTask`。
 - 对产物做版本化或快照，避免后续任务覆盖业务展示。
+- 若使用 plan/act 审批，把 `waiting_user` 视为活跃任务，参与并发限制、取消、超时和恢复；approve 后先确认 SSE，再切 act 并发送执行 `askResponse`。
 
 ### P2：RAG、数据源、分享和 Browser Use
 
@@ -97,6 +98,30 @@ Frontend -> Product API -> AgentTaskService / InfiniSynapseAdapter -> InfiniSyna
 - 如果必须 retry，先判断同一 `taskId` 是否已经出现消息或 workspace 产物，再决定继续监听、标记待人工处理或显式创建新任务。
 - 长 SSE worker 要有足够长的 lock、心跳/续锁、graceful shutdown 和超时策略。
 - 错误对象和日志只保存脱敏摘要，不保存完整 API Key、完整敏感输入或下载文件内容。
+- SSE 事件要按当前 `taskId` 过滤；同一连接或恢复流里出现其它任务事件时不要误判完成。
+- plan 阶段 worker 若在 `waiting_user` 退出，act 阶段重入要能重新入队或使用阶段化 jobId，避免复用已完成 job。
+
+## 产物归档和下载
+
+InfiniSynapse workspace 是执行侧产物位置，不应是成熟产品唯一的长期存储。完成后应枚举 workspace，把最终 Markdown/JSON/PDF/DOCX/ZIP/图片等交付物复制到自有 artifact store，并在业务库保存：
+
+- `provider_path`：InfiniSynapse workspace 中的原始 path。
+- `storage_key`：自有对象存储或文件服务中的 key。
+- `content_type`、`size`、`checksum`、`created_at`。
+- `visibility`：private、approved_for_export、exported 等业务可见性。
+
+下载接口优先读取自有 storage；只有在归档缺失或内部恢复流程中才回源 `downloadTaskFile`。文本预览可以用 `previewFile` 快速恢复，但 PDF/DOCX/ZIP 等二进制必须按二进制流处理，不按 JSON envelope 解析。
+
+## 计费、用量和补偿
+
+成熟产品若在任务开始前扣自有额度或创建账单项，补偿逻辑必须幂等。推荐用"原子 claim → refund/credit → finalize"：
+
+1. 任务失败、取消或超时后，先在业务库原子标记 `refund_pending` / `compensation_claimed`，保证只有一个 worker 能进入补偿。
+2. 再调用自有计费系统执行 refund/credit。
+3. 退款成功后 finalize 为 `refunded` / `credited`。如果 finalize 落库失败，不能释放 claim，否则下一次恢复可能重复退款。
+4. 如果退款调用失败，保留可重试状态和脱敏错误，不要直接标成已退款。
+
+这属于业务侧责任；InfiniSynapse 只提供任务执行、事件和 workspace 产物，不替代产品自己的计费一致性。
 
 ## 输入快照和隐私
 
@@ -146,6 +171,9 @@ InfiniSynapse 更适合补强：
 - API Key 是否只在服务端，前端是否只连自有后端？
 - 是否持久化 `taskId`、`connId`、输入 hash、上传映射、workspace snapshot 和错误？
 - worker 是否先 SSE 后 `newTask`，并避免盲目重试外部副作用？
+- SSE 事件是否按 `taskId` 过滤，恢复时是否先查消息和 workspace？
 - 单 API Key 多租户边界是否被业务权限和产物访问控制兜住？
+- 最终产物是否按业务要求归档到自有 artifact store，而不是只依赖 provider workspace？
+- 自有计费/用量补偿是否幂等，避免重复退款或漏退？
 - RAG / Browser Use 是否按需接入，而不是 P0 默认启用？
 - 是否有 feature flag、用量限制、取消、恢复和脱敏日志？

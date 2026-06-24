@@ -66,7 +66,12 @@ curl -s -X POST "$INF/api/ai/message" \
   -d "{\"type\":\"askResponse\",\"taskId\":\"$TASK_ID\",\"askResponse\":\"messageResponse\",\"text\":\"再展开第二点\"}"
 
 # 取消
-curl -s "$INF/api/ai_task/cancelTask?taskId=$TASK_ID" -H "Authorization: Bearer $API_KEY"
+curl -s -X POST "$INF/api/ai/message" \
+  -H "Authorization: Bearer $API_KEY" -H "Content-Type: application/json" \
+  -d "{\"type\":\"cancelTask\",\"taskId\":\"$TASK_ID\"}"
+
+# 兼容旧部署时可 fallback：
+# curl -s "$INF/api/ai_task/cancelTask?taskId=$TASK_ID" -H "Authorization: Bearer $API_KEY"
 ```
 
 ## 常见失败

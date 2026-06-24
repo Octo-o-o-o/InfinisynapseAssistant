@@ -22,6 +22,12 @@
 
 > 严格 schema 产物经验：执行 prompt 若要求 Agent 写 JSON，并且下游会做 schema 校验，必须列出逐字字段名和禁止别名。真实消费项目里，模型容易把 `id/label/score0To5/status/reason/title/probability/mitigation` 写成 `name/score/passed/detail/description` 等自然字段；后端应继续严格校验，prompt 负责减少重试。
 
+## 成熟产品状态机
+
+把 plan/act 接入已有产品时，不要只靠内存或前端按钮状态。业务库至少要能区分 `planning`、`waiting_user`、`running`、`completed`、`failed`、`cancelled`，并保存 `plan_requested_at`、`plan_received_at`、`plan_approved_at`、`act_sent_at` 或等价审计字段。
+
+`waiting_user` 仍是活跃任务：它要参与同用户并发限制、取消、超时、恢复和用量展示。用户 approve 时，后端应重新建立或确认 SSE，再发送 `togglePlanActMode` 与执行 `askResponse`。如果队列 `jobId` 使用自有业务任务 ID，而计划阶段 worker 已经完成退出，approve 重入时要删除/替换已完成 job，或使用 plan/act 分阶段 `jobId`，避免队列返回旧完成 job 导致 act 阶段没有运行。
+
 ## 真实 smoke 与 bounded artifacts
 
 真实集成 smoke 的目标是验证"先 SSE → plan → 人工审批 → act → workspace 产物 → schema 校验 → 私密下载"闭环，不是生成完整业务报告。默认 smoke 应选择小型公开目标，关闭 Browser/RAG/数据源，使用短 prompt 和固定小产物。
@@ -60,6 +66,8 @@
 - 只描述 JSON schema 的语义，不写逐字字段名，导致 Agent 输出字段别名而 schema 校验失败。
 - 把真实 smoke 当完整报告生成，让 Agent 写长 Markdown/JSON，触发截断补写循环和额外消耗。
 - approve 后没有重新建立/确认 SSE，导致 act 阶段实际运行但业务后端收不到产物完成事件。
+- `waiting_user` 不计入活跃任务，导致同一用户在计划待审期间继续创建多个高成本任务。
+- 队列复用同一个已完成 job，approve 后没有真正启动 act worker。
 
 ## 检查清单
 
@@ -69,4 +77,6 @@
 - 计划阶段是否真的"只说不做"？
 - 是否把 `plan_mode_response` 和 success notification 纳入状态机？
 - approve 后是否在 `togglePlanActMode`/`askResponse` 前确认 SSE 已连接？
+- `waiting_user` 是否参与并发限制、取消、超时、恢复和用量展示？
+- approve 重入时队列是否能真正启动 act 阶段，而不是命中旧完成 job？
 - 真实 smoke 是否设置了小产物硬上限、总超时、失败取消和 workspace 恢复？

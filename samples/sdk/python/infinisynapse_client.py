@@ -232,7 +232,12 @@ class InfiniSynapseClient:
         return self.send_message(body)
 
     def cancel_task(self, task_id: str) -> Any:
-        return self._request("GET", "/api/ai_task/cancelTask", query={"taskId": task_id})
+        try:
+            return self.send_message({"type": "cancelTask", "taskId": task_id})
+        except InfiniSynapseError as e:
+            if e.http_status in (404, 405, 501):
+                return self._request("GET", "/api/ai_task/cancelTask", query={"taskId": task_id})
+            raise
 
     def browser_session(self) -> Any:
         return self._request("GET", "/api/ai_browser/session")

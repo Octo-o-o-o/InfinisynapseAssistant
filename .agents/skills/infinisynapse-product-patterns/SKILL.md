@@ -40,8 +40,8 @@ Frontend -> Your Backend -> InfiniSynapse Server API
 4. 后端发 `POST /api/ai/message`，`type=newTask`。
 5. 后端把 SSE 转为产品状态、进度、结构化结果。
 6. 如果 Agent 请求上传，后端先上传文件，再发 `askResponse`。
-7. 任务完成后读取 workspace 产物并保存业务结果记录。
-8. 用户停止时调用 `GET /api/ai_task/cancelTask?taskId=...`。
+7. 任务完成后读取 workspace 产物，必要时归档到自有对象存储，并保存业务结果记录。
+8. 用户停止时调用 `POST /api/ai/message`，`type=cancelTask`；旧部署才 fallback `GET /api/ai_task/cancelTask?taskId=...`。
 
 ## Product patterns
 
@@ -91,6 +91,9 @@ Frontend -> Your Backend -> InfiniSynapse Server API
 - 自有产品保留用户、权限、计费、确定性业务状态、低延迟结构化 LLM 和已有带权限的 RAG。
 - 先接一个低风险闭环：API route 创建自有任务并入队，worker 先 SSE 后 `newTask`，完成后同步 workspace artifact。
 - `newTask` 是外部副作用；预生成 `taskId`/`connId`，用输入 hash 去重，worker 恢复时先查消息和 workspace，不要盲目自动重发。
+- plan/act 审批要有业务状态机；计划完成的 `waiting_user` 仍算活跃任务，approve 前先确认 SSE，切 act 后再发执行 `askResponse`。
+- 产品历史、下载和合规审计不要只依赖 provider workspace；完成后把最终 PDF/DOCX/ZIP/JSON/Markdown 等产物复制到自有 artifact store，并保留 provider path 作为来源索引。
+- 如果接入自有计费/用量，退款或补偿必须幂等：先原子 claim，再执行 refund/credit，成功后 finalize；不能在外部退款成功但落库失败时释放 claim。
 - SaaS 单 API Key 不等于每个业务用户都有物理隔离租户；多租户产品必须由自有后端做用户/组织权限和产物访问控制。
 - P0 不默认接 Browser Use 或长期 RAG；确认 per-user session、RAG 隔离和用户授权后再开放。
 

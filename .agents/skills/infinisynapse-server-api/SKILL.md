@@ -50,7 +50,8 @@ GET /api/tools/storage/downloadTaskFile/:taskId?path=
 - Treat `notification.type=error` as task failure.
 - Persist `taskId`, `connId`, upload file mappings, and final artifact paths in your own DB.
 - Do not expose API Key to frontend.
-- Use `chatSettings: { "mode": "act" }` when a product should run an acting Agent flow.
+- Use `chatSettings: { "mode": "act" }` when a product should run an acting Agent flow; use `mode: "plan"` plus explicit approve/toggle when a human must review the plan first.
+- Cancel through `POST /api/ai/message` with `type: "cancelTask"`; keep `/api/ai_task/cancelTask?taskId=` only as legacy fallback.
 - Read workspace artifacts for reports, charts, PDFs, Word files, and images.
 
 ## Upload modes

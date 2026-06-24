@@ -189,9 +189,17 @@ export class InfiniSynapseClient {
     return this.sendMessage({ askResponse: "messageResponse", ...args, type: "askResponse" });
   }
 
-  /** 取消任务。taskId 走 Query，文档允许 GET 或 POST。 */
-  cancelTask(taskId: string): Promise<unknown> {
-    return this.request("GET", "/api/ai_task/cancelTask", { query: { taskId } });
+  /** 取消任务。优先走 /api/ai/message；旧部署不可用时再回退到旧 Query 入口。 */
+  async cancelTask(taskId: string): Promise<unknown> {
+    try {
+      return await this.sendMessage({ type: "cancelTask", taskId });
+    } catch (error) {
+      const status = error instanceof InfiniSynapseError ? error.opts.httpStatus : undefined;
+      if (status === 404 || status === 405 || status === 501) {
+        return this.request("GET", "/api/ai_task/cancelTask", { query: { taskId } });
+      }
+      throw error;
+    }
   }
 
   getState(taskId?: string): Promise<unknown> {
