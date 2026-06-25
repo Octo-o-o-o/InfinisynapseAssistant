@@ -52,6 +52,8 @@ GET /api/ai_browser/session
 - 引导用户安装插件并打开目标浏览器页面。
 - UI 文案应说明插件只在需要网页操作时使用。
 
+注意: `GET /api/ai_browser/session` 在未连接时可能返回 `null`、空体或缺少 `status` 的对象。产品后端必须先做空值防御，把这些情况当作未连接；不要直接读取 `session.status`。
+
 ## 不需要插件的场景
 
 - 表单输入生成报告

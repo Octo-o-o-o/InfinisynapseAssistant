@@ -22,14 +22,16 @@
 ## 产品接入流程
 
 1. 仅当产品需要浏览器上下文时，建任务前调 `GET /api/ai_browser/session`。
-2. 看返回的 `status` / `activeSessionCount` 判断插件是否在线。
+2. 看返回的 `status` / `activeSessionCount` 判断插件是否在线；如果返回 `null`、空体或缺字段，统一当作未连接处理。
 3. **未连接** → UI 引导用户安装插件（两条安装路径见 skill）并打开目标页面；**不要**创建需要网页操作的任务。
 4. **已连接** → 创建任务（`chatSettings.mode` 用 `act`），用 SSE 实时展示候选/风险/建议。
 5. 任务执行中插件断开 → 提示用户重连；用户换商品/换目标 → `cancelTask`。
 
 ## session 返回字段
 
-`{ uid, clientId, status, connectedAt, lastActivityAt, browserName, version, activeSessionCount, activeSessionIds }`——`status` 与 `activeSessionCount` 是判断"在线/可用"的主要依据。
+通常返回 `{ uid, clientId, status, connectedAt, lastActivityAt, browserName, version, activeSessionCount, activeSessionIds }`。`status` 与 `activeSessionCount` 是判断"在线/可用"的主要依据。
+
+实测集成注意：未连接时该接口可能返回 `null`、空体或缺少 `status` 的对象。产品后端要先做空值防御，把这些情况映射为"Browser Use 未连接"，不要直接读取 `session.status`，也不要因此创建需要浏览器上下文的任务。
 
 ## UX 文案建议
 
@@ -40,6 +42,7 @@
 ## 常见反模式
 
 - 不查 `session` 直接创建网页任务，结果 Agent 无浏览器可操作、任务空转。
+- 假设 `session` 一定是对象，未连接时直接读取 `session.status` 导致 500。
 - 给本不需要浏览器的产品（表单报告、后端分析）接 Browser Use。
 - 插件断连后不提示用户，任务静默失败。
 
