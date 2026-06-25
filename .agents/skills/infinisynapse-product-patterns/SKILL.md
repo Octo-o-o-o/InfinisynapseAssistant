@@ -80,6 +80,7 @@ Frontend -> Your Backend -> InfiniSynapse Server API
 - 不要只要求"写一篇报告"；prompt 要求输出 decision memo、scorecard、evidence ledger、risk/gates 和 validation plan。
 - 事实、推断、假设、建议分开写；关键判断必须带来源、置信度和"什么事实会改变结论"。
 - SSE 用于展示研究进度，最终判断和结构化评分从 workspace 产物读取，不只依赖最后一条消息。
+- 多 URL 输入要区分"主评估对象"和"参考/竞品/证据链接": 主对象可空但最多一个；无主对象时按方向/想法判断，不要把参考链接误认为被评分项目。Browser Use 授权只绑定一个明确目标 URL/域名，不默认覆盖全部参考链接。
 - 长期 RAG 只保存用户或 Reviewer 确认过的报告、评分卡或证据摘要；失败任务、草稿和未审结论不要自动 `saveToRag`。
 - 对外分享默认发布脱敏 export；不要把含闭源材料、客户数据或上传文件的原始 task 直接 `setShare`。
 
