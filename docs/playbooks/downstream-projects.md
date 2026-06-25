@@ -35,6 +35,13 @@
 
 其中 `INFINISYNAPSE_ASSISTANT_HOME` 可覆盖规则包位置；默认可以指向本机固定路径。
 
+如果下游项目的 `infini:scan` 是“遍历全仓再逐文件调用
+`tools/hooks/lib/scan-infinisynapse.sh`”，wrapper 必须先排除生成目录和依赖目录，
+至少包括 `.next/`、`node_modules/`、`dist/`、`coverage/`、`test-results/`。
+这些目录里的 bundle 会把服务端/前端代码重新打包到同一个文件，扫描器会按源码文件
+语义误判，也会让 precommit 时间膨胀。扫描器本体仍保持逐文件严格检查；排除生成物
+应由下游 wrapper 或 CI 文件列表负责。
+
 ## 反哺决策表
 
 | 下游发现 | 是否反哺 | 放哪里 |
