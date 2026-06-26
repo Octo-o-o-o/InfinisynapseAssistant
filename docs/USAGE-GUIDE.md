@@ -142,15 +142,16 @@ bash /Users/wangyixiao/WorkSpace/InfinisynapseAssistant/tools/hooks/lib/scan-inf
 新项目应先决定 InfiniSynapse 的角色，再写代码。默认流程：
 
 1. **定义产品类型**：报告生成、网页研究、RAG 问答、数据分析、任务分享，或混合模式。
-2. **选择 InfiniSynapse 能力**：先读 `docs/reference/capabilities.md`，判断需要长任务、Browser Use、RAG、数据源、市场订阅、任务分享中的哪些。
-3. **确定接入形态**：临时外部规则包、子模块/vendor、还是复制 SDK。
-4. **设计后端代理**：前端只调用自家后端；后端持有 API Key，保存 `taskId`、`connId`、上传映射、workspace 产物路径。
-5. **先跑 curl spike**：用 `samples/templates/curl-quickstart.md` 验证 Key、SSE 和任务产物读取。
-6. **内化 SDK 骨架**：把 `samples/sdk/` 改造成业务后端服务，不让前端直连 InfiniSynapse。
-7. **实现最小长任务闭环**：建业务任务行 → 先连 SSE → `newTask` → 处理 `askResponse` → `completion_result` → 读取 workspace。
-8. **按需接 playbook**：安全接入、RAG 文件放置、Browser Use、市场订阅、任务分享、排查。
-9. **加护栏**：运行 `npm run scan -- <file>`，或把扫描器接入业务项目 pre-commit/CI。
-10. **再做产品增强**：恢复、取消、ZIP 导出、分享、RAG 保存、多版本回滚。
+2. **先做 LLM 路由**：非 agentic 的一问一答、摘要、改写、分类、抽取、轻量评分默认直连 LLM；agentic 的深度调研、长任务、工具使用、Browser Use 和 workspace 产物默认走 InfiniSynapse。即使新项目还没有自有大模型调用层，也建议先做最小 server-side `LlmGateway`（见 `docs/playbooks/llm-routing.md`）。
+3. **选择 InfiniSynapse 能力**：先读 `docs/reference/capabilities.md`，判断需要长任务、Browser Use、RAG、数据源、市场订阅、任务分享中的哪些。
+4. **确定接入形态**：临时外部规则包、子模块/vendor、还是复制 SDK。
+5. **设计后端代理**：前端只调用自家后端；后端持有 LLM provider key 和 InfiniSynapse API Key，保存 `taskId`、`connId`、上传映射、workspace 产物路径。
+6. **先跑 curl spike**：用 `samples/templates/curl-quickstart.md` 验证 Key、SSE 和任务产物读取。
+7. **内化 SDK 骨架**：把 `samples/sdk/` 改造成业务后端服务，不让前端直连 InfiniSynapse。
+8. **实现最小长任务闭环**：建业务任务行 → 先连 SSE → `newTask` → 处理 `askResponse` → `completion_result` → 读取 workspace。
+9. **按需接 playbook**：LLM 路由、安全接入、RAG 文件放置、Browser Use、市场订阅、任务分享、排查。
+10. **加护栏**：运行 `npm run scan -- <file>`，或把扫描器接入业务项目 pre-commit/CI。
+11. **再做产品增强**：恢复、取消、ZIP 导出、分享、RAG 保存、多版本回滚。
 
 如果你说“做 InfiniSynapse 上的应用”，当前公开文档里可依赖的是 Server API、SSE、任务工作区、Browser Use、RAG/数据源和分享能力；不要假设存在未公开的插件打包或应用商店发布 API。除非上游文档新增明确接口，否则仍按“自有后端 + InfiniSynapse Server API”的产品架构实现。
 
@@ -171,7 +172,7 @@ bash /Users/wangyixiao/WorkSpace/InfinisynapseAssistant/tools/hooks/lib/scan-inf
 
 老项目里最值得优先修的是安全和时序：API Key 服务端化、先连 SSE 再发 `newTask`、二进制下载按流处理、完成后读 workspace。
 
-如果老项目已经有用户体系、权限、队列、会员/计费、业务 RAG 或自研短链路 AI，先读 `docs/playbooks/existing-product-integration.md`。默认不要替换这些核心系统，而是把 InfiniSynapse 接成可灰度、可恢复、可取消、可审计的长任务 Agent 层。
+如果老项目已经有用户体系、权限、队列、会员/计费、业务 RAG 或自研短链路 AI，先读 `docs/playbooks/existing-product-integration.md` 和 `docs/playbooks/llm-routing.md`。默认不要替换这些核心系统，而是把 InfiniSynapse 接成可灰度、可恢复、可取消、可审计的长任务 Agent 层。
 
 ## 相比直接引用原始文档的优势
 
@@ -191,6 +192,7 @@ bash /Users/wangyixiao/WorkSpace/InfinisynapseAssistant/tools/hooks/lib/scan-inf
 | --- | --- |
 | 了解平台能做什么 | `docs/reference/capabilities.md` |
 | 写 SDK 或后端 route | `infinisynapse-server-api` skill + `samples/sdk/` |
+| 判断轻量调用直连 LLM 还是走 InfiniSynapse | `docs/playbooks/llm-routing.md` |
 | 安全接入 / 不泄露 API Key | `docs/playbooks/secure-integration.md` |
 | 成熟 SaaS / 老项目接入边界 | `docs/playbooks/existing-product-integration.md` |
 | RAG 资料 / 文件放哪里 | `docs/playbooks/rag-file-placement.md` |

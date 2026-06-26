@@ -7,13 +7,15 @@
 | 目标 | 先读 | 再读 |
 | --- | --- | --- |
 | 快速理解项目 | `README.md` | `docs/USAGE-GUIDE.md`, `docs/PROJECT-ARCHITECTURE.md` |
-| 新项目 / 老项目如何接入 InfiniSynapse | `docs/USAGE-GUIDE.md` | `docs/playbooks/secure-integration.md`, `docs/playbooks/existing-product-integration.md`, `samples/sdk/` |
+| 新项目 / 老项目如何接入 InfiniSynapse | `docs/USAGE-GUIDE.md` | `docs/playbooks/llm-routing.md`, `docs/playbooks/secure-integration.md`, `docs/playbooks/existing-product-integration.md`, `samples/sdk/` |
+| LLM 调用路由 / 轻量直连还是走 InfiniSynapse | `docs/playbooks/llm-routing.md` | `docs/playbooks/secure-integration.md`, `docs/reference/task-lifecycle.md` |
 | 下游业务项目如何使用并反哺本规则包 | `docs/playbooks/downstream-projects.md` | `docs/USAGE-GUIDE.md`, `tools/hooks/lib/scan-infinisynapse.sh` |
 | 了解平台能做什么 | `docs/reference/capabilities.md` | `docs/reference/api-index.md`, `docs/reference/task-lifecycle.md` |
 | 快速查接口和红线 | `docs/QUICK-REFERENCE.md` | `docs/reference/api-index.md`, `docs/reference/task-lifecycle.md` |
 | 安全接入产品 / 不泄露 API Key | `docs/playbooks/secure-integration.md` | `samples/templates/server-side-agent-flow.md`, `samples/sdk/` |
 | 成熟 SaaS / 老项目接入边界 | `docs/playbooks/existing-product-integration.md` | `docs/playbooks/secure-integration.md`, `docs/reference/task-lifecycle.md` |
-| 长任务 runtime guard / 后台通知 / 产物归档 | `docs/playbooks/existing-product-integration.md` | `docs/reference/task-lifecycle.md`, `docs/QUICK-REFERENCE.md` |
+| 产物归档 / 自有对象存储 / 完整输出包 | `docs/playbooks/artifact-archiving.md` | `docs/playbooks/existing-product-integration.md`, `docs/reference/api-index.md` |
+| 长任务 runtime guard / 后台通知 / worker 恢复 | `docs/playbooks/existing-product-integration.md` | `docs/reference/task-lifecycle.md`, `docs/QUICK-REFERENCE.md` |
 | 让 AI 助手接手开发 | `AGENTS.md`, `llms.txt` | 对应 `.agents/skills/*/SKILL.md` |
 | 判断内容应该放哪里 | `docs/CONTENT-MODEL.md` | 本文件的“维护边界” |
 | 维护 / 同步官方文档 / 发布前检查 | `docs/MAINTENANCE.md` | `docs/SOURCE-AUDIT.md`, `CONTRIBUTING.md` |
@@ -32,7 +34,7 @@
 | 目录或文件 | 定位 | 内容类型 |
 | --- | --- | --- |
 | `docs/reference/` | 从官方文档提炼出的事实基准 | AI 友好 + 官方文档内容 |
-| `docs/playbooks/` | 基于官方事实总结的核心场景做法 | AI/人类友好 + 特定用法内容 |
+| `docs/playbooks/` | 基于官方事实总结的核心场景做法（LLM 路由、安全接入、RAG、Browser Use、分享等） | AI/人类友好 + 特定用法内容 |
 | `docs/CONTENT-MODEL.md` | 说明内容分类和维护边界 | 人类友好 + 特定用法内容 |
 | `docs/MAINTENANCE.md` | 上游同步、派生文档更新与发布前检查 | 人类友好 + 特定用法内容 |
 | `docs/QUICK-REFERENCE.md` | 高频规则和接口速查 | AI/人类友好 + 特定用法内容 |

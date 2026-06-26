@@ -17,3 +17,4 @@ __pycache__/
 # 本地业务方案草稿（不随规则包发布）
 docs/proposals/job-recruitment-infinisynapse-product-plan.md
 docs/proposals/project-value-research-infinisynapse-product-plan.md
+docs/proposals/*.codex.md

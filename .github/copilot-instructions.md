@@ -5,6 +5,7 @@ This repository is an InfiniSynapse AI workspace. Before suggesting InfiniSynaps
 - Follow `AGENTS.md`; locate endpoints in `docs/reference/api-index.md`, the SSE flow in `docs/reference/task-lifecycle.md`.
 - Search `upstream-docs/infinisynapse-site/zh/markdown/` for endpoint names; English docs are supplemental only. Do not invent endpoints.
 - Keep InfiniSynapse API Keys on the server side; never in frontend/mobile bundles. Default to a backend proxy route.
+- Route AI calls by workload: non-agentic Q&A, summaries, rewrites, classification, extraction, and lightweight scoring should use a server-side LLM gateway; agentic long tasks, Browser Use, tool-heavy research, and workspace artifacts should use InfiniSynapse.
 - Use SSE before sending `newTask`: `GET /api/ai/events?connId=...` then `POST /api/ai/message`.
 - Use task workspace APIs for generated artifacts (`getTaskWorkspace`/`previewFile`/`downloadTaskFile`).
 - Download endpoints return binary streams — do not parse as JSON envelopes.

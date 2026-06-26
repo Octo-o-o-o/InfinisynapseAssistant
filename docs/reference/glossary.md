@@ -22,6 +22,15 @@
 | `message.partial` | 流式增量/覆盖（同 `ts` 覆盖累积，别无脑拼接） | [task-lifecycle.md](task-lifecycle.md) |
 | `upload_file_to_sandbox` | `message.ask` 的取值；Agent 请求把本地文件传到当前任务沙箱 | [task-lifecycle.md](task-lifecycle.md) |
 
+## AI 调用路由
+
+| 术语 | 含义 | 见 |
+| --- | --- | --- |
+| 非 agentic 调用 | 一问一答、摘要、改写、翻译、分类、抽取、轻量评分等短链路 LLM 调用 | [playbooks/llm-routing.md](../playbooks/llm-routing.md) |
+| agentic 长任务 | 需要多步骤工具使用、异步恢复、Browser Use、workspace 产物或深度调研的任务 | [playbooks/llm-routing.md](../playbooks/llm-routing.md) |
+| `LlmGateway` | 业务后端里的轻量 LLM 调用封装；provider key 只在服务端 | [playbooks/llm-routing.md](../playbooks/llm-routing.md) |
+| `AgentTaskService` | 业务后端里的 InfiniSynapse 长任务适配层，负责 `taskId`、`connId`、SSE、workspace 和归档 | [playbooks/llm-routing.md](../playbooks/llm-routing.md) |
+
 ## 文件与存储
 
 | 术语 | 含义 | 见 |
@@ -32,6 +41,8 @@
 | 两类上传 | `/api/ai/upload`（被动响应 Agent）vs `/api/tools/taskUpload`（主动归档） | [api-index.md](api-index.md) §5 |
 | `docDir` | RAG 知识库文档目录；SaaS 下必须是平台可访问位置，**不是本机 `/Users/...`** | [playbooks/rag-file-placement.md](../playbooks/rag-file-placement.md) |
 | 二进制下载 | `downloadTaskFile`/`downloadZip`/`storage/download` 返回流，不走 JSON 信封 | [api-index.md](api-index.md) 末尾清单 |
+| artifact store（自有产物库） | 业务侧对象存储/文件服务，用于长期下载、权限控制、留存和分析；provider workspace 只作来源索引 | [playbooks/artifact-archiving.md](../playbooks/artifact-archiving.md) |
+| archive manifest | 归档索引文件，记录业务任务、provider path、自有 storage key、checksum、可见性和归档状态 | [playbooks/artifact-archiving.md](../playbooks/artifact-archiving.md) |
 
 ## 资源
 

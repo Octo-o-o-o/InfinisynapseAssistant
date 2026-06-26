@@ -14,6 +14,7 @@ alwaysApply: false
 - Read `AGENTS.md` first; locate endpoints in `docs/reference/api-index.md` and the SSE flow in `docs/reference/task-lifecycle.md`.
 - Search `upstream-docs/infinisynapse-site/zh/markdown/` before using an endpoint; English docs are supplemental only. Do not invent endpoints.
 - Keep API Key server-side; never put it in frontend/mobile bundles. Default to a backend proxy route.
+- Route AI calls by workload: non-agentic Q&A, summaries, rewrites, classification, extraction, and lightweight scoring should use a server-side LLM gateway; agentic long tasks, Browser Use, tool-heavy research, and workspace artifacts should use InfiniSynapse.
 - Connect `GET /api/ai/events?connId=` before `POST /api/ai/message` (newTask).
 - Use workspace APIs for deliverables: `getTaskWorkspace`, `previewFile`, `downloadTaskFile`.
 - Download endpoints return binary streams — do not parse them as `{code,message,data}` JSON.

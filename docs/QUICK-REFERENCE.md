@@ -36,6 +36,14 @@ x-lang: zh_CN
 
 上传接口使用 `multipart/form-data`。
 
+## LLM 调用路由
+
+- 非 agentic 的一问一答、摘要、改写、翻译、分类、字段抽取、轻量评分，默认由业务后端直连 LLM。
+- agentic 的深度调研、长任务、工具使用、Browser Use、报告/表格/PDF 等 workspace 产物，默认走 InfiniSynapse。
+- 新项目即使还没有自有大模型调用层，也建议做最小 server-side `LlmGateway`；不要为了省一层封装，把所有轻量调用包装成 InfiniSynapse 任务。
+- 两类 provider key 都只放服务端：LLM provider key 给 `LlmGateway`，InfiniSynapse API Key 给 `AgentTaskService` / backend worker。
+- 详细决策表见 `docs/playbooks/llm-routing.md`。
+
 ## 长任务流程
 
 1. `GET /api/ai/events?connId=<uuid>`
@@ -72,10 +80,13 @@ x-lang: zh_CN
 
 ## 产物归档
 
+- workspace 是执行侧产物位置，不是成熟产品的唯一长期存储。
+- 正式产品完成后应枚举 workspace，把最终产物和可选 `manifest.json` / `workspace.zip` 归档到自有 artifact store（R2/S3/OSS/文件服务）。
+- 业务库保存 `provider_path`、`storage_key`、`content_type`、`size`、`checksum`、`visibility` 和 `archive_status`。
+- 用户下载优先读自有 storage；provider workspace 只作为恢复、补偿或 backfill 来源。
 - 报告类任务可约定 `working/` 放草稿和中间材料，`final/` 放正式交付物；这是业务约定，不是 InfiniSynapse 原生语义。
-- 归档服务优先收集 `final/` 下的 canonical artifacts，并兼容老任务根目录产物。
-- 面向用户的下载包建议由业务系统重新打包，至少包含 `manifest.json`、`reports/`、`data/`；公开包必须先做脱敏和 DLP 检查。
-- `downloadTaskFile` / ZIP 下载返回二进制流，不按 JSON envelope 解析。
+- 开发环境可 fail-open；生产环境应为必需产物配置 `archive_required` 或等价策略。
+- 详细标准见 `docs/playbooks/artifact-archiving.md`。
 
 ## 常见错误
 

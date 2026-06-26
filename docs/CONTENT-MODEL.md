@@ -45,6 +45,16 @@
 
 SaaS 版本下，`docDir: "/path/to/docs"` 不能理解为开发者本机路径。InfiniSynapse SaaS 无法读取你的本地 `/Users/...` 目录。长期 RAG 文件必须位于 InfiniSynapse 服务端可访问的位置，通常是平台可访问的文件系统、OSS/S3，或已经订阅/创建好的知识库资源。
 
+## LLM 调用路由规则
+
+这条规则也属于“特定用法内容”：官方 API 文档说明 InfiniSynapse 长任务能力，但不会替业务产品决定所有模型调用是否都经过 InfiniSynapse。
+
+一句话：
+
+> 非 agentic 的一问一答、摘要、改写、分类、抽取、轻量评分默认由业务后端直连 LLM；agentic 的深度调研、长任务、工具使用、Browser Use 和 workspace 产物默认走 InfiniSynapse。
+
+完整决策表见 `docs/playbooks/llm-routing.md`。这里的“直连 LLM”仍然要求 API Key 只在服务端，不允许前端直连模型供应商。
+
 ## 何时新增“特定用法”
 
 满足以下任一条件时，可以新增到 skills、playbooks、quick reference 或 templates：

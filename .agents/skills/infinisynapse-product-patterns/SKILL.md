@@ -6,6 +6,7 @@ description: |
     - 用户问“基于这个项目开发产品”
     - 用户设计 mini-app、SaaS 功能、报告生成、尽调/决策包、购物/网页任务、高考助手
     - 用户需要 API 编排而不是单个 endpoint
+    - 用户比较轻量直连 LLM 与 InfiniSynapse 长任务的边界
 ---
 
 # InfiniSynapse Product Patterns
@@ -14,8 +15,10 @@ description: |
 
 - `upstream-docs/infinisynapse-site/zh/markdown/server-api-reference.md` 第 10 节
 - `docs/reference/task-lifecycle.md`（含三类产品与 API 的对应表）
+- `docs/playbooks/llm-routing.md`（轻量直连 LLM vs agentic 长任务走 InfiniSynapse）
 - `docs/playbooks/secure-integration.md`（后端代理 + API Key 安全 + 状态托管）
 - `docs/playbooks/existing-product-integration.md`（成熟 SaaS / 老项目接入边界、worker 幂等、多租户风险）
+- `docs/playbooks/artifact-archiving.md`（workspace 产物、自有对象存储、manifest 和下载策略）
 - `docs/playbooks/task-sharing.md`（公开分享边界；原始 task public 会公开全部消息和文件）
 - `.agents/skills/infinisynapse-server-api/SKILL.md`
 - 可复制骨架: `samples/sdk/`、`samples/templates/`
@@ -23,14 +26,23 @@ description: |
 ## 架构默认值
 
 ```text
-Frontend -> Your Backend -> InfiniSynapse Server API
+Frontend -> Your Backend -> LlmGateway / InfiniSynapse Server API
 ```
 
 理由:
 
 - API Key 必须留在服务端。
+- 非 agentic 的一问一答、摘要、改写、分类、抽取、轻量评分默认直连 LLM，保持低延迟、低成本和低状态复杂度。
+- agentic 的深度调研、长任务、工具使用、Browser Use、workspace 产物默认走 InfiniSynapse。
 - `taskId`、`connId`、上传映射、结果路径需要落自家数据库。
 - SSE 可以由自家后端转发给前端，便于鉴权、限流、恢复和审计。
+
+## LLM routing defaults
+
+- 按工作负载分流，不按项目新旧分流。
+- 新项目即使还没有自有大模型调用层，也建议先做最小 server-side `LlmGateway`，不要把轻量非 agentic 调用都包装成 InfiniSynapse 任务。
+- 已有产品保留原有短链路 LLM / RAG / 规则能力；InfiniSynapse 默认补强多步骤、异步、产物型 Agent 任务。
+- 边界不清时问：没有 `taskId`、SSE、workspace 和恢复，这个调用是否仍能稳定交付？能则直连 LLM；不能则走 InfiniSynapse。
 
 ## Common Agent task skeleton
 
@@ -40,7 +52,7 @@ Frontend -> Your Backend -> InfiniSynapse Server API
 4. 后端发 `POST /api/ai/message`，`type=newTask`。
 5. 后端把 SSE 转为产品状态、进度、结构化结果。
 6. 如果 Agent 请求上传，后端先上传文件，再发 `askResponse`。
-7. 任务完成后读取 workspace 产物，必要时归档到自有对象存储，并保存业务结果记录。
+7. 任务完成后读取 workspace 产物；正式产品把必需产物、manifest 和可选 workspace ZIP 归档到自有对象存储，并保存业务结果记录。
 8. 用户停止时调用 `POST /api/ai/message`，`type=cancelTask`；旧部署才 fallback `GET /api/ai_task/cancelTask?taskId=...`。
 
 ## Runtime guard and background delivery
@@ -106,7 +118,7 @@ Frontend -> Your Backend -> InfiniSynapse Server API
 - 先接一个低风险闭环：API route 创建自有任务并入队，worker 先 SSE 后 `newTask`，完成后同步 workspace artifact。
 - `newTask` 是外部副作用；预生成 `taskId`/`connId`，用输入 hash 去重，worker 恢复时先查消息和 workspace，不要盲目自动重发。
 - plan/act 审批要有业务状态机；计划完成的 `waiting_user` 仍算活跃任务，approve 前先确认 SSE，切 act 后再发执行 `askResponse`。
-- 产品历史、下载和合规审计不要只依赖 provider workspace；完成后把最终 PDF/DOCX/ZIP/JSON/Markdown 等产物复制到自有 artifact store，并保留 provider path 作为来源索引。
+- 产品历史、下载和合规审计不要只依赖 provider workspace；完成后把最终 PDF/DOCX/ZIP/JSON/Markdown 等产物复制到自有 artifact store，并保留 provider path、storage key、checksum 和 manifest 作为来源索引（见 `docs/playbooks/artifact-archiving.md`）。
 - 如果接入自有计费/用量，退款或补偿必须幂等：先原子 claim，再执行 refund/credit，成功后 finalize；不能在外部退款成功但落库失败时释放 claim。
 - SaaS 单 API Key 不等于每个业务用户都有物理隔离租户；多租户产品必须由自有后端做用户/组织权限和产物访问控制。
 - P0 不默认接 Browser Use 或长期 RAG；确认 per-user session、RAG 隔离和用户授权后再开放。

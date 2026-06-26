@@ -2,6 +2,8 @@
 
 Use this pattern when building a product feature on top of InfiniSynapse.
 
+Do not use this long-task flow for every AI call. Non-agentic Q&A, summaries, rewrites, classification, extraction, and lightweight scoring should go through your server-side `LlmGateway`; use this template for agentic long tasks and workspace artifacts.
+
 ```text
 Frontend
   POST /api/my-feature/start
@@ -15,7 +17,10 @@ Your backend
   5. POST {INF_URL}/api/ai/message with type=newTask.
   6. Stream/transform SSE to frontend.
   7. Upload files if Agent asks for upload_file_to_sandbox.
-  8. On completion, read workspace and persist artifact paths.
+  8. On completion, read workspace and select required final artifacts.
+  9. Download artifacts as text/binary, calculate checksum, and upload to your artifact store.
+  10. Write archive manifest, artifact rows, and optional workspace ZIP key.
+  11. Serve product downloads from your own artifact store; use provider workspace only for recovery/backfill.
 
 Frontend
   GET /api/my-feature/:id/events
@@ -31,6 +36,20 @@ Minimum server-owned fields:
 - `userInput`
 - `uploadedFiles`
 - `workspaceFiles`
-- `finalArtifactPath`
+- `finalArtifacts`
+- `archiveManifestKey`
+- `workspaceZipKey`
+- `artifactStoreKeys`
 - `error`
 
+Recommended artifact row fields:
+
+- `providerPath`
+- `storageKey`
+- `contentType`
+- `size`
+- `sha256`
+- `isFinal`
+- `isRequired`
+- `visibility`
+- `archiveStatus`

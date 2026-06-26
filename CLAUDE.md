@@ -16,6 +16,7 @@ Claude 写规则或方案时，先判断内容属于哪类：官方事实放 `up
 写 InfiniSynapse 相关代码/配置时默认遵守，违反这些是高风险：
 
 - **API Key 只在服务端**：不进前端 bundle、移动端、截图、公开仓库。产品默认后端代理架构。
+- **先做 LLM 路由**：非 agentic 的一问一答、摘要、改写、分类、抽取、轻量评分默认直连 LLM；agentic 长任务、工具使用、Browser Use 和 workspace 产物默认走 InfiniSynapse。
 - **先连 SSE 再发任务**：先 `GET /api/ai/events?connId=`，再 `POST /api/ai/message`（`newTask`）。
 - **产物读工作区**：完成后用 `getTaskWorkspace` / `previewFile` / `downloadTaskFile`，不要只读最后一条文本。
 - **下载是二进制**：`downloadTaskFile` / `downloadZip` / `storage/download` 返回流，不要按 `{code,message,data}` 解析。
@@ -32,7 +33,7 @@ Claude 写规则或方案时，先判断内容属于哪类：官方事实放 `up
 4. 涉及文档维护或上游同步时读 `docs/MAINTENANCE.md`
 5. `docs/reference/`：`capabilities.md`（能力总览）、`api-index.md`（端点）、`task-lifecycle.md`（SSE 时序）、`glossary.md`（术语）
 6. 用户任务对应的 `.claude/skills/*/SKILL.md`
-7. 对应场景读 `docs/playbooks/`：安全接入、RAG/文件放置、市场订阅、Browser Use、任务分享、排查
+7. 对应场景读 `docs/playbooks/`：LLM 调用路由、安全接入、RAG/文件放置、市场订阅、Browser Use、任务分享、排查
 
 ## Skills
 
@@ -61,6 +62,7 @@ Claude 写规则或方案时，先判断内容属于哪类：官方事实放 `up
 
 - 回答 InfiniSynapse API 相关问题前，先 `rg` 搜 `upstream-docs/infinisynapse-site/zh/markdown/`，英文快照只作补充。
 - 写产品集成方案时，默认采用后端代理 API Key 的架构。
+- 写产品 AI 调用方案时，默认按工作负载分流：轻量非 agentic 调用走自有后端 `LlmGateway`，agentic 长任务走 InfiniSynapse。直连 LLM 仍然必须服务端持有 provider key。
 - 写长任务代码时，默认先连 SSE，再发 `newTask`。
 - 写 RAG / 文件方案时，必须区分 task workspace、sandbox、RAG `docDir`、OSS/S3、数据源上传，不能把 SaaS RAG 写成本机目录；详细规则见 `docs/playbooks/rag-file-placement.md`。
 - 写私有化部署说明时，必须检查 `AUTHING_SERVER_URL` 的四条规则。

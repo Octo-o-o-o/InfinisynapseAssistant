@@ -73,7 +73,7 @@ InfiniSynapse 目前在公开训练语料里覆盖较少，AI 助手很容易在
 │   ├── CONTENT-MODEL.md              # AI/人类友好 × 官方/特定用法的内容维护模型
 │   ├── MAINTENANCE.md                # 上游同步、派生文档更新与发布前检查
 │   ├── reference/                    # 事实基准：api-index / capabilities / task-lifecycle / glossary
-│   ├── playbooks/                    # 特定用法：安全接入 / 成熟产品接入 / RAG / 市场订阅 / Browser Use / 任务分享 / 排查（+ assets/ 图）
+│   ├── playbooks/                    # 特定用法：LLM 路由 / 安全接入 / 成熟产品接入 / RAG / 市场订阅 / Browser Use / 任务分享 / 排查（+ assets/ 图）
 │   ├── proposals/                    # 产品方案草案（外围，不进规则主线）
 │   └── ...                           # 使用说明、架构、审计、计划、速查、许可说明
 ├── samples/
@@ -119,7 +119,7 @@ InfiniSynapse 目前在公开训练语料里覆盖较少，AI 助手很容易在
 | Skill | 触发场景 | 必读文档 |
 | --- | --- | --- |
 | `infinisynapse-server-api` | 写 SDK、后端 route、SSE、任务、数据源、RAG、上传下载 | `zh/markdown/server-api-reference.md` |
-| `infinisynapse-product-patterns` | 设计高考助手、购物比价、报告快写等任务型产品 | Server API 第 10 节 |
+| `infinisynapse-product-patterns` | 设计高考助手、购物比价、报告快写、LLM 路由等任务型产品 | Server API 第 10 节 |
 | `infinisynapse-deployment` | 私有化部署、`.env`、Docker Compose、登录失败、OOM | `zh/markdown/private-deployment-guide.md` |
 | `infinisynapse-cli` | `agent_infini` CLI、CLI 请求映射、二次集成 | `zh/markdown/cli-api-reference.md` |
 | `infinisynapse-browser-extension` | Browser Use、Chrome 插件、网页自动化、购物/网页研究 | `zh/markdown/chrome-plugin-install.md` |
@@ -214,10 +214,11 @@ upstream-docs/infinisynapse-site/zh/markdown/
 ```text
 Frontend / Mini App
   -> Your Backend
-    -> InfiniSynapse Server API
+    -> LlmGateway              # 非 agentic 轻量调用
+    -> InfiniSynapse Server API # agentic 长任务和 workspace 产物
 ```
 
-不要让前端直接持有 InfiniSynapse API Key。
+默认按工作负载分流：一问一答、摘要、改写、分类、抽取、轻量评分等非 agentic 调用走后端直连 LLM；深度调研、长任务、工具使用、Browser Use 和报告/PDF/表格等 workspace 产物走 InfiniSynapse。不要让前端直接持有 LLM provider key 或 InfiniSynapse API Key。
 
 服务端至少保存：
 
