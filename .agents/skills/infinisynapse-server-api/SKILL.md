@@ -53,6 +53,8 @@ GET /api/tools/storage/downloadTaskFile/:taskId?path=
 - Use `chatSettings: { "mode": "act" }` when a product should run an acting Agent flow; use `mode: "plan"` plus explicit approve/toggle when a human must review the plan first.
 - Cancel through `POST /api/ai/message` with `type: "cancelTask"`; keep `/api/ai_task/cancelTask?taskId=` only as legacy fallback.
 - Read workspace artifacts for reports, charts, PDFs, Word files, and images.
+- On worker crash, SSE idle, or product-level timeout, re-read task state/workspace and salvage complete required artifacts before marking the business task failed; user-initiated cancellation normally skips user-facing salvage unless the product explicitly promises partial delivery.
+- Use one shared artifact finalization writer for normal completion, salvage, recovery cron, and backfill; cross-process recovery should claim work with an atomic conditional update before finalizing.
 
 ## Upload modes
 

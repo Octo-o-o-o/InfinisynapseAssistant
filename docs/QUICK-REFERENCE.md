@@ -59,7 +59,7 @@ x-lang: zh_CN
 
 - prompt 中的"最多搜索 N 次 / 最多 N 个来源 / 控制 N 分钟"只是软目标，不是硬预算 API。
 - 后端需要实现总耗时、SSE idle、可识别工具事件、child task、repair 轮数等 runtime guard。
-- 超时或取消后先 `cancelTask`，再用 `getTaskWorkspace` 抢救已有产物；产物完整时进入 `validating` / `needs_review`，不要直接丢弃。
+- worker 重启、SSE idle 或业务总超时后先按需 `cancelTask`，再用 `getTaskWorkspace` 抢救已有产物；产物完整时进入 `validating` / `needs_review`，不要直接丢弃。用户主动取消通常表示放弃交付，默认不做面向用户的 salvage。
 - 用户离开页面后继续运行和通知，需要业务后端 worker 托管 SSE；当前公开 Server API 不提供面向业务系统的完成 webhook。
 
 ## 上传模式
@@ -84,6 +84,7 @@ x-lang: zh_CN
 - workspace 是执行侧产物位置，不是成熟产品的唯一长期存储。
 - 正式产品完成后应枚举 workspace，把必需最终产物归档到自有 artifact store（R2/S3/OSS/文件服务）；`manifest.json` / `workspace.zip` 是按需升级项。
 - 业务库保存 `provider_path`、`storage_key`、`content_type`、`size`、`checksum`、`visibility` 和 `archive_status`。
+- artifact-level `archive_status` 只描述已有文件的归档来源/结果；必需产物缺失放在任务/包级 `missingRequired` / `archive_error`，不要伪造成一条 `missing` artifact。
 - 用户下载优先读自有 storage；provider workspace 只作为恢复、补偿或 backfill 来源。
 - 报告类任务可约定 `working/` 放草稿和中间材料，`final/` 放正式交付物；这是业务约定，不是 InfiniSynapse 原生语义。
 - 开发环境可 fail-open；生产环境应明确必需产物归档失败是否阻断用户可下载完成态。
