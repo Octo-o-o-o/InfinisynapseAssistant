@@ -52,7 +52,7 @@ Recommended artifact row fields:
 - `storageKey`
 - `contentType`
 - `size`
-- `sha256`
+- `checksum`
 - `isFinal`
 - `isRequired`
 - `visibility`
