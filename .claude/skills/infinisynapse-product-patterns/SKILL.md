@@ -43,6 +43,13 @@ Frontend -> Your Backend -> InfiniSynapse Server API
 7. 任务完成后读取 workspace 产物，必要时归档到自有对象存储，并保存业务结果记录。
 8. 用户停止时调用 `POST /api/ai/message`，`type=cancelTask`；旧部署才 fallback `GET /api/ai_task/cancelTask?taskId=...`。
 
+## Runtime guard and background delivery
+
+- Prompt 中的"最多搜索 N 次/最多引用 N 个来源"是软目标，不是 InfiniSynapse 的硬预算 API。真正的成本边界要由业务后端实现：总耗时、SSE idle 次数、可识别工具事件计数、child task 数、repair 轮数和手动/自动 `cancelTask`。
+- 超时或取消后不要直接丢弃任务。先用 `getTaskWorkspace` 枚举已有产物，校验必需文件和 schema；产物完整时可进入业务侧 validating/needs_review，产物不完整才保留 failed/cancelled。
+- 如果产品承诺"用户离开页面后继续运行并通知"，不能依赖浏览器页面持有 SSE。后端 worker 必须托管 SSE 生命周期；断线或进程重启后用 `getUiMessageById` + `getTaskWorkspace` 恢复状态。
+- 按当前公开 Server API，不要假设有面向业务后端的完成 webhook。邮件、站内信、Slack/webhook 等用户通知都应由业务系统在归档和 DLP 之后幂等发送，避免恢复任务时重复通知。
+
 ## Product patterns
 
 ### Form + PDF report
@@ -72,15 +79,21 @@ Frontend -> Your Backend -> InfiniSynapse Server API
 - 先列出并启用需要的 DB/RAG 资源。
 - prompt 明确报告目标、受众、结构和引用要求。
 - 多轮修订使用同一 `taskId` 的 `askResponse`。
+- 对长报告，推荐区分 `working/` 和 `final/`：Agent 可在 `working/` 写草稿、来源摘录和中间矩阵；业务系统只把 `final/` 下的 canonical artifacts 当作正式交付物。
+- `working/` 中避免使用 `report.md`、`scorecard.json`、`decision-memo.md` 等正式文件名，防止业务侧按 basename 收集时误把草稿当最终产物。
 
 ### Evidence-backed decision package
 
 适合项目尽调、供应商评估、Build-vs-Buy、开源引入、投研初筛等高价值判断。
 
+- 高成本任务在 `newTask(plan)` 前可先做 1-2 个轻量澄清问题，确认主评估对象、Lens、约束和成功标准；不要把澄清本身做成新的长任务。
 - 不要只要求"写一篇报告"；prompt 要求输出 decision memo、scorecard、evidence ledger、risk/gates 和 validation plan。
 - 事实、推断、假设、建议分开写；关键判断必须带来源、置信度和"什么事实会改变结论"。
 - SSE 用于展示研究进度，最终判断和结构化评分从 workspace 产物读取，不只依赖最后一条消息。
 - 多 URL 输入要区分"主评估对象"和"参考/竞品/证据链接": 主对象可空但最多一个；无主对象时按方向/想法判断，不要把参考链接误认为被评分项目。Browser Use 授权只绑定一个明确目标 URL/域名，不默认覆盖全部参考链接。
+- 统一来源台账 schema，优先使用一个 `source-map.json` 承载来源、用途、可信度、覆盖 claim、最后访问时间等字段；不要为不同深度报告维护多个近似来源文件名。
+- 标准/深度报告可让 Agent 先在 `working/` 分阶段整理 source discovery、evidence extraction、comparison、risk review，再在 `final/` 重新 synthesis；最终报告不能机械拼接，要去重、回应冲突证据并统一评分口径。
+- 多 agent / 多 task 对抗流程不是 InfiniSynapse 原生 parent-child 能力。业务后端必须自己保存 parent run、child `taskId`/`connId`、输入、workspace snapshot、预算和恢复状态；repair loop 必须有硬上限。
 - 长期 RAG 只保存用户或 Reviewer 确认过的报告、评分卡或证据摘要；失败任务、草稿和未审结论不要自动 `saveToRag`。
 - 对外分享默认发布脱敏 export；不要把含闭源材料、客户数据或上传文件的原始 task 直接 `setShare`。
 

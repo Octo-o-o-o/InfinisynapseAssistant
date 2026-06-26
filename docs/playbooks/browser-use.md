@@ -51,6 +51,19 @@ act 阶段 prompt 应明确:
 - 禁止登录、提交表单、修改、删除、购买、签约、授权、邀请成员、发送消息、公开分享或任何外部写入。
 - 遇到二次登录、权限升级、支付/删除/提交/授权弹窗，或跳转到未授权域名，立即停止相关网页操作并写入 limitations。
 
+### 多域名边界
+
+默认授权模型是一个明确的 `targetUrl` / `targetDomain`。不要因为任务里有多个参考链接、竞品链接或证据链接，就默认 Browser Use 可以读取所有域名。
+
+如果产品确实需要跨多个域名做网页研究，先把它当作更高风险流程处理:
+
+1. 在 plan 阶段列出每个拟访问域名、访问目的、是否需要登录态、只读边界和失败兜底。
+2. 让用户逐项确认授权；未确认的域名只能通过普通 web/search 或用户上传材料处理。
+3. 执行中跳到未授权域名时立即停止 Browser Use，并把该项写入 limitations。
+4. 先做小规模 spike 验证 provider 行为、插件状态、跳转和恢复，再把多域名能力作为公开产品承诺。
+
+对大多数报告和尽调产品，P0/P1 应保持单域名 Browser Use；能用 Server API、上传文件、RAG 或普通 web 证据解决时，不要升级为跨域浏览器操作。
+
 ## session 返回字段
 
 通常返回 `{ uid, clientId, status, connectedAt, lastActivityAt, browserName, version, activeSessionCount, activeSessionIds }`。`status` 与 `activeSessionCount` 是判断"在线/可用"的主要依据。
@@ -70,6 +83,7 @@ act 阶段 prompt 应明确:
 - 不查 `session` 直接创建网页任务，结果 Agent 无浏览器可操作、任务空转。
 - 假设 `session` 一定是对象，未连接时直接读取 `session.status` 导致 500。
 - 给本不需要浏览器的产品（表单报告、后端分析）接 Browser Use。
+- 把参考链接、竞品链接或搜索结果都当成已授权浏览器域名。
 - 插件断连后不提示用户，任务静默失败。
 - 让用户在产品表单里输入第三方网站密码、验证码、Cookie 或 token。
 - 在前端 bundle 中硬编码 InfiniSynapse API 地址、API Key、Bearer 或浏览器 session 直连逻辑。
