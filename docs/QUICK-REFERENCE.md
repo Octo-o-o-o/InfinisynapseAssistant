@@ -47,6 +47,13 @@ x-lang: zh_CN
 7. 用 `GET /api/tools/storage/downloadTaskFile/:taskId?path=` 下载
 8. 取消时优先 `POST /api/ai/message`，`type=cancelTask`
 
+## 成熟产品守卫
+
+- prompt 中的"最多搜索 N 次 / 最多 N 个来源 / 控制 N 分钟"只是软目标，不是硬预算 API。
+- 后端需要实现总耗时、SSE idle、可识别工具事件、child task、repair 轮数等 runtime guard。
+- 超时或取消后先 `cancelTask`，再用 `getTaskWorkspace` 抢救已有产物；产物完整时进入 `validating` / `needs_review`，不要直接丢弃。
+- 用户离开页面后继续运行和通知，需要业务后端 worker 托管 SSE；当前公开 Server API 不提供面向业务系统的完成 webhook。
+
 ## 上传模式
 
 | Endpoint | 用途 |
@@ -62,6 +69,13 @@ x-lang: zh_CN
 - 长期知识库资料放 InfiniSynapse 可访问的 RAG `docDir` 或 OSS/S3/file 后端。
 - SaaS RAG 不能读取开发者本机 `/Users/...` 目录。
 - 详细决策表见 `docs/playbooks/rag-file-placement.md`。
+
+## 产物归档
+
+- 报告类任务可约定 `working/` 放草稿和中间材料，`final/` 放正式交付物；这是业务约定，不是 InfiniSynapse 原生语义。
+- 归档服务优先收集 `final/` 下的 canonical artifacts，并兼容老任务根目录产物。
+- 面向用户的下载包建议由业务系统重新打包，至少包含 `manifest.json`、`reports/`、`data/`；公开包必须先做脱敏和 DLP 检查。
+- `downloadTaskFile` / ZIP 下载返回二进制流，不按 JSON envelope 解析。
 
 ## 常见错误
 

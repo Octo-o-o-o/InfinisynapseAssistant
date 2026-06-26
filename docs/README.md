@@ -13,6 +13,7 @@
 | 快速查接口和红线 | `docs/QUICK-REFERENCE.md` | `docs/reference/api-index.md`, `docs/reference/task-lifecycle.md` |
 | 安全接入产品 / 不泄露 API Key | `docs/playbooks/secure-integration.md` | `samples/templates/server-side-agent-flow.md`, `samples/sdk/` |
 | 成熟 SaaS / 老项目接入边界 | `docs/playbooks/existing-product-integration.md` | `docs/playbooks/secure-integration.md`, `docs/reference/task-lifecycle.md` |
+| 长任务 runtime guard / 后台通知 / 产物归档 | `docs/playbooks/existing-product-integration.md` | `docs/reference/task-lifecycle.md`, `docs/QUICK-REFERENCE.md` |
 | 让 AI 助手接手开发 | `AGENTS.md`, `llms.txt` | 对应 `.agents/skills/*/SKILL.md` |
 | 判断内容应该放哪里 | `docs/CONTENT-MODEL.md` | 本文件的“维护边界” |
 | 维护 / 同步官方文档 / 发布前检查 | `docs/MAINTENANCE.md` | `docs/SOURCE-AUDIT.md`, `CONTRIBUTING.md` |

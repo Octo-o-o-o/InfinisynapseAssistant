@@ -129,6 +129,10 @@ test -s docs/playbooks/downstream-projects.md && ok "下游项目反哺 playbook
 grep -q "downstream-projects.md" docs/USAGE-GUIDE.md && ok "使用指南指向下游项目反哺 playbook" || bad "使用指南缺下游项目反哺入口"
 grep -q "feedback:check" docs/playbooks/downstream-projects.md && ok "下游项目 playbook 含 feedback:check" || bad "下游项目 playbook 缺 feedback:check"
 grep -q "precommit:check" docs/playbooks/downstream-projects.md && ok "下游项目 playbook 含 precommit:check" || bad "下游项目 playbook 缺 precommit:check"
+grep -q "Runtime guard 和预算" docs/playbooks/existing-product-integration.md && ok "成熟产品 playbook 含 runtime guard" || bad "成熟产品 playbook 缺 runtime guard"
+grep -q "final/" docs/playbooks/existing-product-integration.md && ok "成熟产品 playbook 含 final/ 归档规则" || bad "成熟产品 playbook 缺 final/ 归档规则"
+grep -q "后台通知不是 provider webhook" docs/reference/task-lifecycle.md && ok "任务生命周期含后台通知边界" || bad "任务生命周期缺后台通知边界"
+grep -q "成熟产品守卫" docs/QUICK-REFERENCE.md && ok "速查含成熟产品守卫" || bad "速查缺成熟产品守卫"
 
 # ---- 5b. 本地方案草稿不应进入仓库主线 ----
 for p in \
