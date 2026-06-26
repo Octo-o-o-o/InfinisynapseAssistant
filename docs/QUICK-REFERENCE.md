@@ -80,12 +80,13 @@ x-lang: zh_CN
 
 ## 产物归档
 
+- 简单问答、摘要、分类、改写、轻量抽取和短文本评分不要套用长任务 workspace 归档流程。
 - workspace 是执行侧产物位置，不是成熟产品的唯一长期存储。
-- 正式产品完成后应枚举 workspace，把最终产物和可选 `manifest.json` / `workspace.zip` 归档到自有 artifact store（R2/S3/OSS/文件服务）。
+- 正式产品完成后应枚举 workspace，把必需最终产物归档到自有 artifact store（R2/S3/OSS/文件服务）；`manifest.json` / `workspace.zip` 是按需升级项。
 - 业务库保存 `provider_path`、`storage_key`、`content_type`、`size`、`checksum`、`visibility` 和 `archive_status`。
 - 用户下载优先读自有 storage；provider workspace 只作为恢复、补偿或 backfill 来源。
 - 报告类任务可约定 `working/` 放草稿和中间材料，`final/` 放正式交付物；这是业务约定，不是 InfiniSynapse 原生语义。
-- 开发环境可 fail-open；生产环境应为必需产物配置 `archive_required` 或等价策略。
+- 开发环境可 fail-open；生产环境应明确必需产物归档失败是否阻断用户可下载完成态。
 - 详细标准见 `docs/playbooks/artifact-archiving.md`。
 
 ## 常见错误
