@@ -56,6 +56,8 @@
 ## 可复用编排口径示例
 
 - OSS 采用度、技术选型或项目尽调可以由业务后端先抓取 deps.dev、OSV、GitHub、npm/PyPI registry 等确定性快照，再把摘要作为证据输入 Agent；connector 失败只写 evidence gap，不让 Agent 伪造高质量证据。
+- connector 抓取要做“逐个包/子请求级降级”：单个 package 或子请求失败只记 evidence gap 并保留其它成功结果，不要用一个会整体 reject 的 `Promise.all` 让单点异常拖垮整个 connector 源、丢掉本可用的证据；短 TTL 缓存只缓存完全成功的结果，避免短暂故障被缓存粘住。
+- 审计与质量门要区分“正常缺口”和“真失败”：非目标生态仓库没有 registry 包、没有漏洞目标等是正常 gap，只要有任一成功快照就算 success（缺口写进 warnings detail），不要整体标 failed 污染审计与命中率统计；warning/部分快照产出的证据要按比例下调 confidence/quality/credibility，避免质量门把缺口当满分证据。后端 connector 证据覆盖 Agent 同名 claim 时应记录被覆盖项，保留审计痕迹。
 - PyPI 下载量应取 pypistats recent endpoint；不要使用 PyPI JSON 中已废弃且常见为 `-1` 的 `info.downloads` 作为采用度证据。
 - CHAOSS 类指标必须写清计算口径。Change Request Closure Ratio 用 closed pull requests / total pull requests，merged PR 已包含在 closed 中，不得重复计数；Release Frequency 优先用 registry release timestamp，缺失时再回退 GitHub release。
 - 决策型产品应在 completed run 后创建 Outcome 回访占位，把原 recommendation、scorecard version、dueAt 和真实结局绑定起来；到期提醒应有独立 due/幂等状态，不复用 run completed/failed 通知状态。
