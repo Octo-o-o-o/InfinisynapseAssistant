@@ -61,6 +61,7 @@
 - 决策型产品应在 completed run 后创建 Outcome 回访占位，把原 recommendation、scorecard version、dueAt 和真实结局绑定起来；到期提醒应有独立 due/幂等状态，不复用 run completed/failed 通知状态。
 - Calibration 视图先做描述性统计，例如 recommendation 命中率、go 决策证伪率、dimension 与结局的样本均值差；样本不足前不要自动调整评分权重。
 - Watchlist delta 重评应以“手动触发 + connector baseline/current 比对 + 只重评受影响模块”为默认边界。baseline 只保存确定性快照摘要和 content hash；recheck 强制重抓当前 connector 快照，比较安全告警、许可证、发布/registry 等窄目标。无变化时只更新 `lastCheckedAt`，不生成新 scorecard version、不通知；有变化时产出 delta memo，追加 `watchlist_delta` scorecard version，并且只在结论可能改变、hard gate 命中或分数显著变化时通知。不要为窄版 watchlist 引入后台调度、队列、BI 看板或完整报告重写；pricing page / Browser Use 类目标缺少只读浏览器会话时应跳过并记录 evidence gap。
+- 决策质量 benchmark 应作为离线脚手架和数据集，而不是产品运行链路。案例应覆盖主要 lens 和反例，并为每例写清 expected key facts、contradictions、hard gates；脚本可对已归档 run 产物计算 fact recall、citation precision、contradiction recall、hard-gate recall、成本、耗时和 repair 次数。盲测 harness 只存 ProjectValueLab 决策包与通用报告的并排路径和人工标注，不自动判定优劣，不自动校准权重，也不读取私有原始材料。
 
 ## 反哺流程
 
