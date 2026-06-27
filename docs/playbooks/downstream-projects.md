@@ -53,6 +53,12 @@
 | 某个业务项目的私有 prompt、用户数据、行业私有规则 | 否 | 留在业务项目 |
 | 未验证的一次性实验 | 否 | 留在业务项目 proposal 或草稿 |
 
+## 可复用编排口径示例
+
+- OSS 采用度、技术选型或项目尽调可以由业务后端先抓取 deps.dev、OSV、GitHub、npm/PyPI registry 等确定性快照，再把摘要作为证据输入 Agent；connector 失败只写 evidence gap，不让 Agent 伪造高质量证据。
+- PyPI 下载量应取 pypistats recent endpoint；不要使用 PyPI JSON 中已废弃且常见为 `-1` 的 `info.downloads` 作为采用度证据。
+- CHAOSS 类指标必须写清计算口径。Change Request Closure Ratio 用 closed pull requests / total pull requests，merged PR 已包含在 closed 中，不得重复计数；Release Frequency 优先用 registry release timestamp，缺失时再回退 GitHub release。
+
 ## 反哺流程
 
 1. 在下游项目提交前运行 `npm run feedback:check` 或人工过一遍反哺清单。
