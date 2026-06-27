@@ -60,6 +60,7 @@
 - CHAOSS 类指标必须写清计算口径。Change Request Closure Ratio 用 closed pull requests / total pull requests，merged PR 已包含在 closed 中，不得重复计数；Release Frequency 优先用 registry release timestamp，缺失时再回退 GitHub release。
 - 决策型产品应在 completed run 后创建 Outcome 回访占位，把原 recommendation、scorecard version、dueAt 和真实结局绑定起来；到期提醒应有独立 due/幂等状态，不复用 run completed/failed 通知状态。
 - Calibration 视图先做描述性统计，例如 recommendation 命中率、go 决策证伪率、dimension 与结局的样本均值差；样本不足前不要自动调整评分权重。
+- Watchlist delta 重评应以“手动触发 + connector baseline/current 比对 + 只重评受影响模块”为默认边界。baseline 只保存确定性快照摘要和 content hash；recheck 强制重抓当前 connector 快照，比较安全告警、许可证、发布/registry 等窄目标。无变化时只更新 `lastCheckedAt`，不生成新 scorecard version、不通知；有变化时产出 delta memo，追加 `watchlist_delta` scorecard version，并且只在结论可能改变、hard gate 命中或分数显著变化时通知。不要为窄版 watchlist 引入后台调度、队列、BI 看板或完整报告重写；pricing page / Browser Use 类目标缺少只读浏览器会话时应跳过并记录 evidence gap。
 
 ## 反哺流程
 
