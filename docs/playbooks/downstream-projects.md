@@ -58,6 +58,8 @@
 - OSS 采用度、技术选型或项目尽调可以由业务后端先抓取 deps.dev、OSV、GitHub、npm/PyPI registry 等确定性快照，再把摘要作为证据输入 Agent；connector 失败只写 evidence gap，不让 Agent 伪造高质量证据。
 - PyPI 下载量应取 pypistats recent endpoint；不要使用 PyPI JSON 中已废弃且常见为 `-1` 的 `info.downloads` 作为采用度证据。
 - CHAOSS 类指标必须写清计算口径。Change Request Closure Ratio 用 closed pull requests / total pull requests，merged PR 已包含在 closed 中，不得重复计数；Release Frequency 优先用 registry release timestamp，缺失时再回退 GitHub release。
+- 决策型产品应在 completed run 后创建 Outcome 回访占位，把原 recommendation、scorecard version、dueAt 和真实结局绑定起来；到期提醒应有独立 due/幂等状态，不复用 run completed/failed 通知状态。
+- Calibration 视图先做描述性统计，例如 recommendation 命中率、go 决策证伪率、dimension 与结局的样本均值差；样本不足前不要自动调整评分权重。
 
 ## 反哺流程
 
