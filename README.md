@@ -146,7 +146,7 @@ bash tools/sync-upstream-docs.sh
 当前验证状态：
 
 ```text
-npm test: PASS（64 项，0 失败）
+npm test: PASS（65 项，0 失败）
 bash tools/doctor.sh: PASS，仅 upstream-src/infini_docker 缺失、GitHub source repository currently unreachable 为预期 WARN
 ```
 
