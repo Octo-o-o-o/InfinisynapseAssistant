@@ -26,6 +26,24 @@ InfiniSynapse 目前在公开训练语料里覆盖较少，AI 助手很容易在
 
 本仓库的目标就是让这些规则成为 AI 助手的默认上下文。
 
+## 项目沉淀出的实际回报
+
+从当前 `main` 的提交历史看，这个仓库不是一次性的文档抓取，而是围绕真实 InfiniSynapse 开发风险持续沉淀出的规则包：先建立官方资料快照、AI 入口和读取顺序，再补齐 TypeScript / Python 参考 SDK、SSE 重连、扫描器和回归测试，随后把 RAG、Browser Use、任务分享、安全接入、成熟产品接入、产物归档、人工审批和下游反哺流程整理成可复用 playbook。
+
+对开发者来说，它的价值不是“多一份文档”，而是把容易出错的 InfiniSynapse 集成经验变成可执行、可验证、可迁移的开发上下文：
+
+| 回报 | 对人类开发者 | 对 AI 助手 |
+| --- | --- | --- |
+| 降低接口幻觉 | 用 `docs/reference/api-index.md` 和 `upstream-docs/` 快速核对 endpoint、method、body 和产物接口 | 先读 `AGENTS.md`、skill、reference，再写代码；没有文档依据时不要编造接口 |
+| 降低安全事故 | 默认服务端代理，API Key 不进浏览器、移动端、截图或公开仓库 | 扫描器识别硬编码 Bearer token、前端直连 InfiniSynapse、错误 `AUTHING_SERVER_URL` |
+| 降低长任务失败率 | 按标准链路实现 `events -> newTask -> askResponse -> workspace`，避免只读 SSE 文本 | 生成代码时必须先连 SSE，再发 `newTask`，完成后读取 `getTaskWorkspace` / `previewFile` / `downloadTaskFile` |
+| 缩短接入时间 | 直接内化 `samples/sdk/`、`curl-quickstart`、`server-side-agent-flow` 到业务后端 | 复用现有 SDK、模板和 playbook，不从零手写 SSE、上传、下载和代理逻辑 |
+| 支撑成熟产品接入 | 老项目可以按灰度、恢复、取消、runtime guard、人工审批、产物归档逐步接入 | 先判断轻量 LLM 直连还是 InfiniSynapse 长任务，不替换已有用户、权限、计费、队列等核心系统 |
+| 保持多工具一致 | Codex、Claude Code、Cursor、GitHub Copilot、通用 RAG 都有对应入口或规则 fan-out | 不同 AI 工具读取同一套硬约束，减少团队协作时的规则漂移 |
+| 持续反哺 | 下游项目把新 endpoint、反模式、运行经验回写到 reference、playbook、SDK、扫描器和测试 | 后续任务复用前一次真实项目经验，避免同类项目重复踩坑 |
+
+AI 读取提示：本节用于判断项目价值和使用边界，不替代 API 事实。真正写 InfiniSynapse 集成代码时，仍按 `AGENTS.md -> 对应 skill -> docs/reference/ -> upstream-docs/` 的顺序确认细节。
+
 ## 相比直接保存原始文档的优势
 
 如果只是把官网文档下载到本地，它仍然是“被动参考资料”：AI 需要自己判断该读哪一页、哪些规则更重要、哪些路径适合当前任务。这个仓库在原始文档之上增加了一层面向 AI 协作的工程化结构：
