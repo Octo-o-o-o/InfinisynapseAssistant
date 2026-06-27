@@ -30,6 +30,8 @@ Browser Use 的自动审批只适合用户已明确指定的只读 URL/域名。
 
 > approve 后执行 prompt 经验：产品侧已经完成人工审批并切到 act 后，执行 prompt 要明确"不要再调用 `plan` / `switch_mode` / `plan_mode_response` / `update_plan` 或模式切换工具，直接执行已批准计划"。真实 smoke 中，若 act prompt 被上游当作新请求，Agent 可能先尝试内部计划工具；参数不完整时会进入工具重试循环并触发 `notification.type=error`。
 
+> 回归 review 经验：不要只检查 prompt 是否写了"先计划"。代码 review 和 smoke 必须同时检查出站 payload 与默认值：计划入口实际发送 `chatSettings.mode="plan"`；通用 client/runner 默认值没有悄悄改成 `act`；approve 路径在 `askResponse` 前发送 `togglePlanActMode` 切到 `act`；追加指令、拒绝、取消等非 approve 路径不会切到 `act`。如果 diff 改到 `chatSettings`、`mode`、`togglePlanActMode`、自动审批或 plan/act 测试 fixture，要按高风险变更审。
+
 ## 成熟产品状态机
 
 把 plan/act 接入已有产品时，不要只靠内存或前端按钮状态。业务库至少要能区分 `planning`、`waiting_user`、`running`、`completed`、`failed`、`cancelled`，并保存 `plan_requested_at`、`plan_received_at`、`plan_approved_at`、`act_sent_at` 或等价审计字段。
@@ -74,7 +76,9 @@ Browser Use 的自动审批只适合用户已明确指定的只读 URL/域名。
 - 把空 `plan_mode_response` 或回显的原始 prompt 当成计划完成，导致过早 approve。
 - 只描述 JSON schema 的语义，不写逐字字段名，导致 Agent 输出字段别名而 schema 校验失败。
 - 把真实 smoke 当完整报告生成，让 Agent 写长 Markdown/JSON，触发截断补写循环和额外消耗。
+- 只看文案或 prompt，没看实际出站 payload，导致计划任务的 SDK 默认值、runner 默认值或测试 fixture 被改成 `act` 后仍通过 review。
 - approve 后没有重新建立/确认 SSE，导致 act 阶段实际运行但业务后端收不到产物完成事件。
+- approve 后直接 `askResponse` 执行 prompt，但没有先发送 `togglePlanActMode` 或等价的 `chatSettings.mode="act"`，导致上游仍按计划阶段处理。
 - approve 后的执行 prompt 没有禁止 `plan` / `switch_mode` / `plan_mode_response` 等模式工具，导致 Agent 回到计划工具循环而不是直接执行已批准计划。
 - `waiting_user` 不计入活跃任务，导致同一用户在计划待审期间继续创建多个高成本任务。
 - 队列复用同一个已完成 job，approve 后没有真正启动 act worker。
@@ -85,8 +89,11 @@ Browser Use 的自动审批只适合用户已明确指定的只读 URL/域名。
 - 用户能否在执行**前**看到 Agent 的计划？
 - `autoApprovalSettings` 是否只放宽了低风险的只读 / 生成动作？
 - 计划阶段是否真的"只说不做"？
+- 是否有测试或日志证据证明计划入口的实际 payload 是 `chatSettings.mode="plan"`？
 - 是否把 `plan_mode_response` 和 success notification 纳入状态机？
 - approve 后是否在 `togglePlanActMode`/`askResponse` 前确认 SSE 已连接？
+- approve 路径是否先切到 `act` 再发送执行 prompt，且追加指令/拒绝/取消不会误切 `act`？
+- review 是否覆盖 client、runner、mock/fake、fixture 和默认参数，而不只覆盖 UI 按钮或 prompt 文案？
 - `waiting_user` 是否参与并发限制、取消、超时、恢复和用量展示？
 - approve 重入时队列是否能真正启动 act 阶段，而不是命中旧完成 job？
 - 真实 smoke 是否设置了小产物硬上限、总超时、失败取消和 workspace 恢复？
