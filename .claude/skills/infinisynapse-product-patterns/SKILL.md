@@ -103,7 +103,8 @@ Frontend -> Your Backend -> LlmGateway / InfiniSynapse Server API
 - 事实、推断、假设、建议分开写；关键判断必须带来源、置信度和"什么事实会改变结论"。
 - SSE 用于展示研究进度，最终判断和结构化评分从 workspace 产物读取，不只依赖最后一条消息。
 - 多 URL 输入要区分"主评估对象"和"参考/竞品/证据链接": 主对象可空但最多一个；无主对象时按方向/想法判断，不要把参考链接误认为被评分项目。Browser Use 授权只绑定一个明确目标 URL/域名，不默认覆盖全部参考链接。
-- 统一来源台账 schema，优先使用一个 `source-map.json` 承载来源、用途、可信度、覆盖 claim、最后访问时间等字段；不要为不同深度报告维护多个近似来源文件名。
+- 统一来源台账 schema，优先使用一个 `source-map.json` 承载来源、用途、可信度、覆盖 claim、最后访问时间等字段；不要为不同深度报告维护多个近似来源文件名。证据台账里的每条 evidence 应有稳定 `sourceId`，能回连到 `source-map.json` 的来源记录；轻量任务如果暂不产 source map，也要把缺口作为 warning/limitations，而不是伪装成已审计来源。
+- 评分卡应把正向吸引力维度和风险/硬门槛分开：dimensions 只表达正向驱动项，风险进入 risk penalty、risks 或 hard gates；如果总分可由维度权重推导，prompt 与后端校验要使用同一公式，failed/unresolved hard gate 要显式限制推荐结论，不能悄悄给出 go。
 - 标准/深度报告可让 Agent 先在 `working/` 分阶段整理 source discovery、evidence extraction、comparison、risk review，再在 `final/` 重新 synthesis；最终报告不能机械拼接，要去重、回应冲突证据并统一评分口径。
 - 多 agent / 多 task 对抗流程不是 InfiniSynapse 原生 parent-child 能力。业务后端必须自己保存 parent run、child `taskId`/`connId`、输入、workspace snapshot、预算和恢复状态；repair loop 必须有硬上限。
 - 长期 RAG 只保存用户或 Reviewer 确认过的报告、评分卡或证据摘要；失败任务、草稿和未审结论不要自动 `saveToRag`。
