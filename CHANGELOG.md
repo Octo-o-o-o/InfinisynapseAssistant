@@ -20,6 +20,7 @@
 - 反哺真实消费项目 smoke：补充 plan/act 下 `plan_mode_response`、success notification 完成信号、`api_req_failed` 失败信号、按 `taskId` 过滤 SSE、approve 前恢复 SSE、`cancelTask` 优先走 `/api/ai/message` 的接入建议。
 - 反哺 InfiProject 端到端 smoke：补充 `getTaskWorkspace.files` 字符串/对象两种形态、空 `plan_mode_response`/prompt 回显不能触发审批、严格 JSON schema prompt 要列逐字字段名并禁止别名。
 - 反哺真实 smoke 长文件循环：明确 bounded artifacts、业务总超时、失败取消、usage 记录和 workspace 恢复策略，避免把 smoke 当完整报告生成导致截断/补写循环。
+- 反哺 ProjectValueLab Browser Use 安装页：补充 Chrome-only 友好提示、官方商店优先、官方可信域离线 ZIP fallback、版本/更新时间/SHA256、下载后下一步说明和浏览器验收清单。
 
 ### Fixed
 - TS/Python SDK multipart 上传现在和普通请求一致处理业务信封：`code !== 200`、token 失效码和 HTTP 错误都会抛 `InfiniSynapseError`，避免 HTTP 200 的上传业务错误被误当成功。
