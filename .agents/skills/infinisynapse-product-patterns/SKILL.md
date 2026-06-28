@@ -80,7 +80,7 @@ Frontend -> Your Backend -> LlmGateway / InfiniSynapse Server API
 适合需要浏览器上下文的任务。
 
 - 先检查 `/api/ai_browser/session`。
-- 若未连接，引导安装 Chrome 插件。
+- 若未连接，引导安装 Chrome 插件；`null` / 空响应 / 缺 `status`、`status` 为空或离线、`activeSessionCount` 缺失或为 `0` 都按未连接 fail-closed。
 - prompt 包含预算、链接、偏好、对比维度。
 - 用 SSE 实时展示候选商品、风险和建议。
 

@@ -97,7 +97,7 @@ act 阶段 prompt 应明确:
 
 通常返回 `{ uid, clientId, status, connectedAt, lastActivityAt, browserName, version, activeSessionCount, activeSessionIds }`。`status` 与 `activeSessionCount` 是判断"在线/可用"的主要依据。
 
-实测集成注意：未连接时该接口可能返回 `null`、空体或缺少 `status` 的对象。产品后端要先做空值防御，把这些情况映射为"Browser Use 未连接"，不要直接读取 `session.status`，也不要因此创建需要浏览器上下文的任务。
+实测集成注意：未连接时该接口可能返回 `null`、空体或缺少 `status` 的对象。产品后端要先做空值防御，把这些情况映射为"Browser Use 未连接"，不要直接读取 `session.status`。`status` 为空、`offline`、`disconnected`、`closed`，或 `activeSessionCount` 缺失 / 非数字 / `0` 时，也应 fail-closed，不要创建需要浏览器上下文的任务。
 
 ## UX 文案建议
 
