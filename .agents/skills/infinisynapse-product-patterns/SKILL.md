@@ -60,6 +60,7 @@ Frontend -> Your Backend -> LlmGateway / InfiniSynapse Server API
 - Prompt 中的"最多搜索 N 次/最多引用 N 个来源"是软目标，不是 InfiniSynapse 的硬预算 API。真正的成本边界要由业务后端实现：总耗时、SSE idle 次数、可识别工具事件计数、child task 数、repair 轮数和手动/自动 `cancelTask`。
 - 超时或取消后不要直接丢弃任务。先用 `getTaskWorkspace` 枚举已有产物，校验必需文件和 schema；产物完整时可进入业务侧 validating/needs_review，产物不完整才保留 failed/cancelled。
 - 如果产品承诺"用户离开页面后继续运行并通知"，不能依赖浏览器页面持有 SSE。后端 worker 必须托管 SSE 生命周期；断线或进程重启后用 `getUiMessageById` + `getTaskWorkspace` 恢复状态。
+- 部署滚动、SIGTERM 或 worker shutdown 不是用户取消。先 pause/停止接新任务，把 active 业务任务标记为 recovering/needs_recovery，后续恢复进程重接 SSE 或查 workspace；不要在普通停机 catch 里调用 `cancelTask`，否则会把仍在 provider 侧运行的任务错误终止。
 - 按当前公开 Server API，不要假设有面向业务后端的完成 webhook。邮件、站内信、Slack/webhook 等用户通知都应由业务系统在归档和 DLP 之后幂等发送，避免恢复任务时重复通知。
 
 ## Product patterns
@@ -119,6 +120,7 @@ Frontend -> Your Backend -> LlmGateway / InfiniSynapse Server API
 - 自有产品保留用户、权限、计费、确定性业务状态、低延迟结构化 LLM 和已有带权限的 RAG。
 - 先接一个低风险闭环：API route 创建自有任务并入队，worker 先 SSE 后 `newTask`，完成后同步 workspace artifact。
 - `newTask` 是外部副作用；预生成 `taskId`/`connId`，用输入 hash 去重，worker 恢复时先查消息和 workspace，不要盲目自动重发。
+- 部署停机不等于用户取消；worker shutdown 应进入 recovering，不能把 provider task 当失败路径自动 cancel。
 - plan/act 审批要有业务状态机；计划完成的 `waiting_user` 仍算活跃任务，approve 前先确认 SSE，切 act 后再发执行 `askResponse`。
 - 产品历史、下载和合规审计不要只依赖 provider workspace；完成后把最终 PDF/DOCX/ZIP/JSON/Markdown 等产物复制到自有 artifact store，并保留 provider path、storage key、checksum 和可选 manifest 作为来源索引（见 `docs/playbooks/artifact-archiving.md`）。
 - 如果接入自有计费/用量，退款或补偿必须幂等：先原子 claim，再执行 refund/credit，成功后 finalize；不能在外部退款成功但落库失败时释放 claim。

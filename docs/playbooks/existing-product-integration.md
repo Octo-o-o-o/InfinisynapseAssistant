@@ -64,6 +64,7 @@ Frontend -> Product API -> AgentTaskService / InfiniSynapseAdapter -> InfiniSyna
 - 用 `input_hash` 做同用户同输入去重：已完成任务可复用，进行中任务返回已有记录。
 - 支持 `/api/ai/message` `type=cancelTask`，并在自有数据库标记 `cancelled`；旧 `/api/ai_task/cancelTask` 只作为兼容 fallback。
 - worker 崩溃后先查 `getUiMessageById` 和 `getTaskWorkspace`，不要盲目重发 `newTask`。
+- 部署滚动、SIGTERM 或 worker shutdown 不等于用户取消：先 pause/停止接新任务，把 active 业务任务标记为 `recovering` / `needs_recovery`，后续恢复进程重接 SSE 或查 workspace；不要在普通停机 catch 里调用 `cancelTask`。
 - 对产物做版本化或快照，避免后续任务覆盖业务展示。
 - 若使用 plan/act 审批，把 `waiting_user` 视为活跃任务，参与并发限制、取消、超时和恢复；approve 后先确认 SSE，再切 act 并发送执行 `askResponse`。
 - 若产品承诺完成邮件、站内信或 webhook，由业务后端在终态归档后幂等发送；按当前公开 Server API，不要假设 InfiniSynapse 会回调你的业务系统。
@@ -100,6 +101,7 @@ Frontend -> Product API -> AgentTaskService / InfiniSynapseAdapter -> InfiniSyna
 - 默认不要让 worker 在崩溃后自动无限重发 `newTask`；恢复时先查 `getUiMessageById`、`getTaskWorkspace` 和本地状态。
 - 如果必须 retry，先判断同一 `taskId` 是否已经出现消息或 workspace 产物，再决定继续监听、标记待人工处理或显式创建新任务。
 - 长 SSE worker 要有足够长的 lock、心跳/续锁、graceful shutdown 和超时策略。
+- graceful shutdown 路径应只释放本地 worker 所有权并把任务交给恢复流程；只有用户主动取消、产品级硬超时或明确的业务放弃才调用 `cancelTask`。
 - 错误对象和日志只保存脱敏摘要，不保存完整 API Key、完整敏感输入或下载文件内容。
 - SSE 事件要按当前 `taskId` 过滤；同一连接或恢复流里出现其它任务事件时不要误判完成。
 - plan 阶段 worker 若在 `waiting_user` 退出，act 阶段重入要能重新入队或使用阶段化 jobId，避免复用已完成 job。
