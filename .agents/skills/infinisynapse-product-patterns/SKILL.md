@@ -123,6 +123,7 @@ Frontend -> Your Backend -> LlmGateway / InfiniSynapse Server API
 - 部署停机不等于用户取消；worker shutdown 应进入 recovering，不能把 provider task 当失败路径自动 cancel。
 - plan/act 审批要有业务状态机；计划完成的 `waiting_user` 仍算活跃任务，approve 前先确认 SSE，切 act 后再发执行 `askResponse`。
 - 产品历史、下载和合规审计不要只依赖 provider workspace；完成后把最终 PDF/DOCX/ZIP/JSON/Markdown 等产物复制到自有 artifact store，并保留 provider path、storage key、checksum 和可选 manifest 作为来源索引（见 `docs/playbooks/artifact-archiving.md`）。
+- 用户下载走自有 artifact store；生产缺 archived object 或对象超限时返回可解释错误并触发补偿，不要把 provider workspace fallback 作为长期下载能力。
 - 如果接入自有计费/用量，退款或补偿必须幂等：先原子 claim，再执行 refund/credit，成功后 finalize；不能在外部退款成功但落库失败时释放 claim。
 - SaaS 单 API Key 不等于每个业务用户都有物理隔离租户；多租户产品必须由自有后端做用户/组织权限和产物访问控制。
 - P0 不默认接 Browser Use 或长期 RAG；确认 per-user session、RAG 隔离和用户授权后再开放。

@@ -55,6 +55,9 @@ GET /api/tools/storage/downloadTaskFile/:taskId?path=
 - Read workspace artifacts for reports, charts, PDFs, Word files, and images.
 - On worker crash, SSE idle, or product-level timeout, re-read task state/workspace and salvage complete required artifacts before marking the business task failed; user-initiated cancellation normally skips user-facing salvage unless the product explicitly promises partial delivery.
 - Use one shared artifact finalization writer for normal completion, salvage, recovery cron, and backfill; cross-process recovery should claim work with an atomic conditional update before finalizing.
+- Put explicit timeouts on multipart upload endpoints and binary download endpoints; SSE should use separate idle/runtime guards, not a short HTTP timeout.
+- Treat `downloadTaskFile` / `downloadZip` as untrusted binary streams: check `Content-Length` before reading when present, count bytes while streaming when absent, and abort when single-file or task-level byte budgets are exceeded.
+- In production products with their own artifact store, user downloads should prefer archived storage and fail closed with a clear product error when the archived object is missing or oversized; provider workspace fallback is for internal recovery/backfill, not a long-term download SLA.
 
 ## Upload modes
 
