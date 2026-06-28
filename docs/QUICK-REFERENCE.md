@@ -59,7 +59,9 @@ x-lang: zh_CN
 
 - prompt 中的"最多搜索 N 次 / 最多 N 个来源 / 控制 N 分钟"只是软目标，不是硬预算 API。
 - 后端需要实现总耗时、SSE idle、可识别工具事件、child task、repair 轮数等 runtime guard。
+- 长任务入口入队前先做 feature flag、rate limit、active task 并发限制；上线前单独跑 production preflight，检查 InfiniSynapse、队列/worker 和对象存储探针。
 - worker 重启、SSE idle 或业务总超时后先按需 `cancelTask`，再用 `getTaskWorkspace` 抢救已有产物；产物完整时进入 `validating` / `needs_review`，不要直接丢弃。用户主动取消通常表示放弃交付，默认不做面向用户的 salvage。
+- `WAITING_APPROVAL` / `waiting_user` 要算活跃任务并设置 TTL；超时后条件认领、按需取消 provider、尝试 salvage、释放并发占位并幂等补偿。
 - 用户离开页面后继续运行和通知，需要业务后端 worker 托管 SSE；当前公开 Server API 不提供面向业务系统的完成 webhook。
 
 ## 上传模式
@@ -84,11 +86,21 @@ x-lang: zh_CN
 - workspace 是执行侧产物位置，不是成熟产品的唯一长期存储。
 - 正式产品完成后应枚举 workspace，把必需最终产物归档到自有 artifact store（R2/S3/OSS/文件服务）；`manifest.json` / `workspace.zip` 是按需升级项。
 - 业务库保存 `provider_path`、`storage_key`、`content_type`、`size`、`checksum`、`visibility` 和 `archive_status`。
+- artifact 列表默认只返回 metadata / `hasPreview`；预览正文、消息全文和大 JSON 走单独 preview/detail 接口。
 - artifact-level `archive_status` 只描述已有文件的归档来源/结果；必需产物缺失放在任务/包级 `missingRequired` / `archive_error`，不要伪造成一条 `missing` artifact。
 - 用户下载优先读自有 storage；provider workspace 只作为恢复、补偿或 backfill 来源。
 - 报告类任务可约定 `working/` 放草稿和中间材料，`final/` 放正式交付物；这是业务约定，不是 InfiniSynapse 原生语义。
 - 开发环境可 fail-open；生产环境应明确必需产物归档失败是否阻断用户可下载完成态。
 - 详细标准见 `docs/playbooks/artifact-archiving.md`。
+
+## 决策质量闭环
+
+- 决策型报告不要只保存 Markdown；应保存 scorecard version、source map/evidence links、当时 recommendation 和最终产物索引。
+- completed run 通过校验后创建 Outcome 回访占位，绑定当时的 scorecard version、recommendation 和 dueAt；到期提醒要独立幂等。
+- 校准视图先做描述性统计：recommendation 命中率、GO 证伪率、dimension 与结局的样本均值差；样本不足前不要自动调权重。
+- Watchlist delta 默认手动触发、窄目标、确定性 connector baseline/current 对比；无变化不生成新 scorecard version、不通知。
+- benchmark 属于离线脚手架；覆盖 key facts、contradictions、hard gates、citation precision 和盲测人工标注，不进入生产请求链路。
+- 详细标准见 `docs/playbooks/decision-quality-loop.md`。
 
 ## 常见错误
 

@@ -38,6 +38,8 @@ Browser Use 的自动审批只适合用户已明确指定的只读 URL/域名。
 
 `waiting_user` 仍是活跃任务：它要参与同用户并发限制、取消、超时、恢复和用量展示。用户 approve 时，后端应重新建立或确认 SSE，再发送 `togglePlanActMode` 与执行 `askResponse`。如果队列 `jobId` 使用自有业务任务 ID，而计划阶段 worker 已经完成退出，approve 重入时要删除/替换已完成 job，或使用 plan/act 分阶段 `jobId`，避免队列返回旧完成 job 导致 act 阶段没有运行。
 
+待审批状态必须有 TTL。超时处理建议由后台 worker/cron 条件认领当前任务，例如 `status='WAITING_APPROVAL' -> 'RECOVERING'`，再按是否已经发送过 `newTask` 决定是否调用 `cancelTask`。取消后可尝试枚举 workspace 抢救已经完整的必需产物；没有完整产物时释放 active user/concurrency 占位，做幂等退款或用量补偿，并把任务标记为取消/失败。不要让没人处理的计划长期占住用户并发额度，也不要在没有条件认领的情况下多进程重复取消、重复退款。
+
 ## 真实 smoke 与 bounded artifacts
 
 真实集成 smoke 的目标是验证"先 SSE → plan → 人工审批 → act → workspace 产物 → schema 校验 → 私密下载"闭环，不是生成完整业务报告。默认 smoke 应选择小型公开目标，关闭 Browser/RAG/数据源，使用短 prompt 和固定小产物。
@@ -82,6 +84,8 @@ Browser Use 的自动审批只适合用户已明确指定的只读 URL/域名。
 - approve 后的执行 prompt 没有禁止 `plan` / `switch_mode` / `plan_mode_response` 等模式工具，导致 Agent 回到计划工具循环而不是直接执行已批准计划。
 - `waiting_user` 不计入活跃任务，导致同一用户在计划待审期间继续创建多个高成本任务。
 - 队列复用同一个已完成 job，approve 后没有真正启动 act worker。
+- 待审批任务没有 TTL 和后台回收，长期占用并发名额或额度。
+- 审批超时回收没有条件认领，多个 worker 同时 cancel/salvage/refund。
 
 ## 检查清单
 
@@ -95,5 +99,6 @@ Browser Use 的自动审批只适合用户已明确指定的只读 URL/域名。
 - approve 路径是否先切到 `act` 再发送执行 prompt，且追加指令/拒绝/取消不会误切 `act`？
 - review 是否覆盖 client、runner、mock/fake、fixture 和默认参数，而不只覆盖 UI 按钮或 prompt 文案？
 - `waiting_user` 是否参与并发限制、取消、超时、恢复和用量展示？
+- 待审批超时是否会条件认领、按需 cancel provider、尝试 salvage、释放并发占位并幂等补偿？
 - approve 重入时队列是否能真正启动 act 阶段，而不是命中旧完成 job？
 - 真实 smoke 是否设置了小产物硬上限、总超时、失败取消和 workspace 恢复？

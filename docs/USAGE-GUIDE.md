@@ -195,6 +195,7 @@ bash /Users/wangyixiao/WorkSpace/InfinisynapseAssistant/tools/hooks/lib/scan-inf
 | 判断轻量调用直连 LLM 还是走 InfiniSynapse | `docs/playbooks/llm-routing.md` |
 | 安全接入 / 不泄露 API Key | `docs/playbooks/secure-integration.md` |
 | 成熟 SaaS / 老项目接入边界 | `docs/playbooks/existing-product-integration.md` |
+| 决策包质量闭环 / Outcome 回访 / Watchlist delta / benchmark | `docs/playbooks/decision-quality-loop.md` |
 | RAG 资料 / 文件放哪里 | `docs/playbooks/rag-file-placement.md` |
 | 订阅共享数据源 / 知识库 | `docs/playbooks/market-subscriptions.md` |
 | 浏览器自动化或购物比价 | `docs/playbooks/browser-use.md` + `infinisynapse-browser-extension` skill |

@@ -43,6 +43,9 @@
 | 二进制下载 | `downloadTaskFile`/`downloadZip`/`storage/download` 返回流，不走 JSON 信封 | [api-index.md](api-index.md) 末尾清单 |
 | artifact store（自有产物库） | 业务侧对象存储/文件服务，用于长期下载、权限控制、留存和分析；provider workspace 只作来源索引 | [playbooks/artifact-archiving.md](../playbooks/artifact-archiving.md) |
 | archive manifest | 归档索引文件，记录业务任务、provider path、自有 storage key、checksum、可见性和归档状态 | [playbooks/artifact-archiving.md](../playbooks/artifact-archiving.md) |
+| scorecard version | 决策型产品里一次正式评分卡快照；Outcome 和 Watchlist delta 应绑定具体版本，避免后续修订污染历史判断 | [playbooks/decision-quality-loop.md](../playbooks/decision-quality-loop.md) |
+| Outcome 回访 | 在完成决策后，到期记录真实结局并计算命中率/证伪率的业务闭环 | [playbooks/decision-quality-loop.md](../playbooks/decision-quality-loop.md) |
+| Watchlist delta | 对确定性 connector baseline/current 快照做窄目标比对，只重评受影响模块的变化记录 | [playbooks/decision-quality-loop.md](../playbooks/decision-quality-loop.md) |
 
 ## 资源
 

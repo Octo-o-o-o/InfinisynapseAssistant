@@ -19,6 +19,7 @@ description: |
 - `docs/playbooks/secure-integration.md`（后端代理 + API Key 安全 + 状态托管）
 - `docs/playbooks/existing-product-integration.md`（成熟 SaaS / 老项目接入边界、worker 幂等、多租户风险）
 - `docs/playbooks/artifact-archiving.md`（workspace 产物、自有对象存储、manifest 和下载策略）
+- `docs/playbooks/decision-quality-loop.md`（证据驱动决策包的 Outcome 回访、Watchlist delta 和 benchmark）
 - `docs/playbooks/task-sharing.md`（公开分享边界；原始 task public 会公开全部消息和文件）
 - `.agents/skills/infinisynapse-server-api/SKILL.md`
 - 可复制骨架: `samples/sdk/`、`samples/templates/`
@@ -60,7 +61,10 @@ Frontend -> Your Backend -> LlmGateway / InfiniSynapse Server API
 - Prompt 中的"最多搜索 N 次/最多引用 N 个来源"是软目标，不是 InfiniSynapse 的硬预算 API。真正的成本边界要由业务后端实现：总耗时、SSE idle 次数、可识别工具事件计数、child task 数、repair 轮数和手动/自动 `cancelTask`。
 - 超时或取消后不要直接丢弃任务。先用 `getTaskWorkspace` 枚举已有产物，校验必需文件和 schema；产物完整时可进入业务侧 validating/needs_review，产物不完整才保留 failed/cancelled。
 - 如果产品承诺"用户离开页面后继续运行并通知"，不能依赖浏览器页面持有 SSE。后端 worker 必须托管 SSE 生命周期；断线或进程重启后用 `getUiMessageById` + `getTaskWorkspace` 恢复状态。
+- 部署滚动、SIGTERM 或 worker shutdown 不是用户取消。先 pause/停止接新任务，把 active 业务任务标记为 recovering/needs_recovery，后续恢复进程重接 SSE 或查 workspace；不要在普通停机 catch 里调用 `cancelTask`，否则会把仍在 provider 侧运行的任务错误终止。
 - 按当前公开 Server API，不要假设有面向业务后端的完成 webhook。邮件、站内信、Slack/webhook 等用户通知都应由业务系统在归档和 DLP 之后幂等发送，避免恢复任务时重复通知。
+- 长任务入口、approve 执行、恢复 cron 和 backfill 都要在发外部副作用前做数据库条件 claim；高成本入口入队前还要做 per-user/per-org rate limit、active task 并发限制和 feature flag fail-closed。
+- 生产打开长任务能力前要跑 production preflight：检查 InfiniSynapse auth/config、队列/worker、对象存储 PUT/GET/DELETE、关键 feature flag 和 worker 是否在线。preflight 失败时不要开启面向用户的长任务入口。
 
 ## Product patterns
 
@@ -79,7 +83,7 @@ Frontend -> Your Backend -> LlmGateway / InfiniSynapse Server API
 适合需要浏览器上下文的任务。
 
 - 先检查 `/api/ai_browser/session`。
-- 若未连接，引导安装 Chrome 插件。
+- 若未连接，引导安装 Chrome 插件；`null` / 空响应 / 缺 `status`、`status` 为空或离线、`activeSessionCount` 缺失或为 `0` 都按未连接 fail-closed。
 - prompt 包含预算、链接、偏好、对比维度。
 - 用 SSE 实时展示候选商品、风险和建议。
 
@@ -109,6 +113,7 @@ Frontend -> Your Backend -> LlmGateway / InfiniSynapse Server API
 - 标准/深度报告可让 Agent 先在 `working/` 分阶段整理 source discovery、evidence extraction、comparison、risk review，再在 `final/` 重新 synthesis；最终报告不能机械拼接，要去重、回应冲突证据并统一评分口径。
 - 多 agent / 多 task 对抗流程不是 InfiniSynapse 原生 parent-child 能力。业务后端必须自己保存 parent run、child `taskId`/`connId`、输入、workspace snapshot、预算和恢复状态；repair loop 必须有硬上限。
 - 长期 RAG 只保存用户或 Reviewer 确认过的报告、评分卡或证据摘要；失败任务、草稿和未审结论不要自动 `saveToRag`。
+- 决策型产品不要止步于一次性报告；完成后应把 scorecard version、Outcome 回访、Watchlist delta 和离线 benchmark 作为业务后端治理层设计，详见 `docs/playbooks/decision-quality-loop.md`。
 - 对外分享默认发布脱敏 export；不要把含闭源材料、客户数据或上传文件的原始 task 直接 `setShare`。
 
 ### Existing SaaS / mature product extension
@@ -119,9 +124,14 @@ Frontend -> Your Backend -> LlmGateway / InfiniSynapse Server API
 - 自有产品保留用户、权限、计费、确定性业务状态、低延迟结构化 LLM 和已有带权限的 RAG。
 - 先接一个低风险闭环：API route 创建自有任务并入队，worker 先 SSE 后 `newTask`，完成后同步 workspace artifact。
 - `newTask` 是外部副作用；预生成 `taskId`/`connId`，用输入 hash 去重，worker 恢复时先查消息和 workspace，不要盲目自动重发。
+- 部署停机不等于用户取消；worker shutdown 应进入 recovering，不能把 provider task 当失败路径自动 cancel。
 - plan/act 审批要有业务状态机；计划完成的 `waiting_user` 仍算活跃任务，approve 前先确认 SSE，切 act 后再发执行 `askResponse`。
+- `waiting_user` / `WAITING_APPROVAL` 要有 TTL；超时后条件认领，按需 `cancelTask`，再尝试 workspace salvage，最后释放并发占位并做幂等退款/用量补偿。不要让待审批任务永久占用用户额度或 active slot。
 - 产品历史、下载和合规审计不要只依赖 provider workspace；完成后把最终 PDF/DOCX/ZIP/JSON/Markdown 等产物复制到自有 artifact store，并保留 provider path、storage key、checksum 和可选 manifest 作为来源索引（见 `docs/playbooks/artifact-archiving.md`）。
+- 用户下载走自有 artifact store；生产缺 archived object 或对象超限时返回可解释错误并触发补偿，不要把 provider workspace fallback 作为长期下载能力。
+- AgentTask / artifact 列表默认只返回 metadata 和 `hasPreview`，不下发完整 `previewText`、消息全文或大 JSON；正文通过单独 preview/detail/download 接口按权限读取。
 - 如果接入自有计费/用量，退款或补偿必须幂等：先原子 claim，再执行 refund/credit，成功后 finalize；不能在外部退款成功但落库失败时释放 claim。
+- 邮件、站内信、Slack/webhook、CRM 写入等外部触达也要用 claim：provider 明确失败时可重试，provider 已接受后即使本地 finalize 失败也不要释放 claim，避免恢复任务重复通知。
 - SaaS 单 API Key 不等于每个业务用户都有物理隔离租户；多租户产品必须由自有后端做用户/组织权限和产物访问控制。
 - P0 不默认接 Browser Use 或长期 RAG；确认 per-user session、RAG 隔离和用户授权后再开放。
 
