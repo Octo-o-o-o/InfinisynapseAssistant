@@ -16,6 +16,7 @@ description: |
 - `upstream-docs/infinisynapse-site/zh/markdown/server-api-reference.md` — 详细原文
 - `upstream-docs/infinisynapse-site/markdown/server-api-reference.md` 作为英文补充参考
 - `docs/QUICK-REFERENCE.md`
+- 桌面 / 原生 BYOK 场景另读 `docs/playbooks/desktop-native-byok.md`
 
 可复制的参考实现: `samples/sdk/typescript/`、`samples/sdk/python/`、`samples/templates/curl-quickstart.md`。
 
@@ -26,6 +27,7 @@ description: |
 - 私有化部署: 替换为自有服务地址。
 - 所有 Server API endpoint 都以 `/api` 开始。
 - 默认认证: `Authorization: Bearer <API Key>`。
+- API Key 必须在服务端或本机可信原生层，不能进 renderer / WebView / 前端 bundle。
 - 默认响应 envelope: `{ code, message, data }`，但下载接口直接返回二进制。
 - SaaS API Key 在 `https://app.infinisynapse.cn/tasks` 左下角设置菜单的 **API Key Management** 里创建和查看。
 - `https://app.infinisynapse.cn/tasks` 可作为开发者后台: API 创建的任务会出现在 **ALL TASKS**，可回看状态、消息、执行过程和工作区产物。
@@ -50,6 +52,7 @@ GET /api/tools/storage/downloadTaskFile/:taskId?path=
 - Treat `notification.type=error` as task failure.
 - Persist `taskId`, `connId`, upload file mappings, and final artifact paths in your own DB.
 - Do not expose API Key to frontend.
+- For desktop/native BYOK, renderer/WebView only calls controlled IPC/native bridge; the trusted main/native side stores the key, opens SSE, and sends messages.
 - Use `chatSettings: { "mode": "act" }` when a product should run an acting Agent flow; use `mode: "plan"` plus explicit approve/toggle when a human must review the plan first.
 - Cancel through `POST /api/ai/message` with `type: "cancelTask"`; keep `/api/ai_task/cancelTask?taskId=` only as legacy fallback.
 - Read workspace artifacts for reports, charts, PDFs, Word files, and images.

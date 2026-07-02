@@ -12,7 +12,8 @@
 
 - InfiniSynapse 规则包路径，例如 `/Users/wangyixiao/WorkSpace/InfinisynapseAssistant`。
 - 处理 Server API、SSE、workspace、RAG、Browser Use、数据源、私有化部署时，先读本仓库的 `AGENTS.md` 和对应 skill。
-- API Key 只在服务端，前端只连自有后端。
+- Web / SaaS 项目 API Key 只在服务端，前端只连自有后端。
+- 单用户桌面 / 原生 BYOK 项目要写清可信边界：Key 在主进程 / native layer / 系统密钥链，renderer/WebView 只走受控 IPC / bridge。
 - 先连 SSE，再创建 `newTask`。
 - 短期资料放 task workspace 的 `upload_documents`；长期 RAG 资料放 InfiniSynapse 可访问目录或 OSS/S3。
 - 默认 plan-first，高风险动作人工确认后再切 `act`。
@@ -49,6 +50,7 @@
 | --- | --- | --- |
 | 新 endpoint、字段、错误码、SSE 事件、上传/下载细节 | 是 | `docs/reference/` 或 `upstream-docs/` 同步后派生 |
 | 可复用的后端代理、SSE、上传、RAG、Browser Use、审批流程 | 是 | `docs/playbooks/`、`samples/sdk/`、skill |
+| 可复用的桌面 / 原生 BYOK 信任边界、IPC 形态、Keychain 存储模式 | 是 | `docs/playbooks/desktop-native-byok.md`、`docs/playbooks/secure-integration.md`、skill |
 | 扫描器可识别的新反模式 | 是 | `tools/hooks/lib/scan-infinisynapse.sh` + fixtures |
 | 官方文档缺口或纠错 | 是 | `docs/SOURCE-AUDIT.md`、`docs/reference/`、相关 playbook |
 | 某个业务项目的私有 prompt、用户数据、行业私有规则 | 否 | 留在业务项目 |
@@ -94,4 +96,5 @@ npm test
 - 下游项目是否能运行本仓库扫描器？
 - 是否有 commit 前反哺检查？
 - 反哺内容是否跨项目可复用？
+- 桌面 / 原生 BYOK 经验是否只包含通用信任边界，不混入某个客户端私有 IPC 或 UI 细节？
 - 本仓库更新后是否跑过 `doctor` 和 `npm test`？

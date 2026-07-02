@@ -35,7 +35,7 @@ InfiniSynapse 目前在公开训练语料里覆盖较少，AI 助手很容易在
 | 回报 | 对人类开发者 | 对 AI 助手 |
 | --- | --- | --- |
 | 降低接口幻觉 | 用 `docs/reference/api-index.md` 和 `upstream-docs/` 快速核对 endpoint、method、body 和产物接口 | 先读 `AGENTS.md`、skill、reference，再写代码；没有文档依据时不要编造接口 |
-| 降低安全事故 | 默认服务端代理，API Key 不进浏览器、移动端、截图或公开仓库 | 扫描器识别硬编码 Bearer token、前端直连 InfiniSynapse、错误 `AUTHING_SERVER_URL` |
+| 降低安全事故 | 默认服务端代理；单用户桌面 / 原生 BYOK 由主进程或 native layer 持 Key；API Key 不进浏览器、WebView、截图或公开仓库 | 扫描器识别硬编码 Bearer token、前端直连 InfiniSynapse、错误 `AUTHING_SERVER_URL` |
 | 降低长任务失败率 | 按标准链路实现 `events -> newTask -> askResponse -> workspace`，避免只读 SSE 文本 | 生成代码时必须先连 SSE，再发 `newTask`，完成后读取 `getTaskWorkspace` / `previewFile` / `downloadTaskFile` |
 | 缩短接入时间 | 直接内化 `samples/sdk/`、`curl-quickstart`、`server-side-agent-flow` 到业务后端 | 复用现有 SDK、模板和 playbook，不从零手写 SSE、上传、下载和代理逻辑 |
 | 支撑成熟产品接入 | 老项目可以按灰度、恢复、取消、runtime guard、人工审批、产物归档逐步接入 | 先判断轻量 LLM 直连还是 InfiniSynapse 长任务，不替换已有用户、权限、计费、队列等核心系统 |
@@ -50,7 +50,7 @@ AI 读取提示：本节用于判断项目价值和使用边界，不替代 API 
 
 - **有明确入口**：`AGENTS.md`、`CLAUDE.md`、`llms.txt` 告诉 AI 先读什么、按什么优先级读，避免每次从一堆 Markdown 里自行猜上下文。
 - **有任务分流**：`.agents/skills/` 把部署、Server API、CLI、产品模式、浏览器插件拆成独立 skill，AI 会按任务读取更小、更相关的规则。
-- **有强约束规则**：把“API Key 必须在服务端”“先连 SSE 再发任务”“结果要读 workspace”“`AUTHING_SERVER_URL` 不能写错”等高风险点从文档描述提升为默认开发约束。
+- **有强约束规则**：把“API Key 必须在可信后端边界”“先连 SSE 再发任务”“结果要读 workspace”“`AUTHING_SERVER_URL` 不能写错”等高风险点从文档描述提升为默认开发约束。
 - **有产品编排模式**：不仅保存 endpoint，还整理了高考助手、购物比价、报告快写等应用级调用流程，方便从“单接口调用”推进到“可落地产品设计”。
 - **有可跑的参考 SDK**：`samples/sdk/` 提供零依赖的 TypeScript / Python 客户端（SSE 解析、`runTask` 长任务编排、后端代理、二进制下载、两类上传），并带离线单测，AI 可以直接复制而不必现写易错的 SSE/代理。
 - **有实时护栏**：`tools/hooks/` 的扫描器在每次 Edit/Write 后自动检查「API Key 进前端、SSE 顺序、二进制当 JSON、`AUTHING_SERVER_URL` 写错」等风险点；命中高危（`INF-SEC-*`/`INF-ENV-001/002`）会阻塞要求当场修，`INF-SSE-001`/`INF-DL-001` 等为提醒。
@@ -91,7 +91,7 @@ AI 读取提示：本节用于判断项目价值和使用边界，不替代 API 
 │   ├── CONTENT-MODEL.md              # AI/人类友好 × 官方/特定用法的内容维护模型
 │   ├── MAINTENANCE.md                # 上游同步、派生文档更新与发布前检查
 │   ├── reference/                    # 事实基准：api-index / capabilities / task-lifecycle / glossary
-│   ├── playbooks/                    # 特定用法：LLM 路由 / 安全接入 / 成熟产品接入 / RAG / 市场订阅 / Browser Use / 任务分享 / 排查（+ assets/ 图）
+│   ├── playbooks/                    # 特定用法：LLM 路由 / 安全接入 / 桌面 BYOK / 成熟产品接入 / RAG / 市场订阅 / Browser Use / 任务分享 / 排查（+ assets/ 图）
 │   ├── proposals/                    # 产品方案草案（外围，不进规则主线）
 │   └── ...                           # 使用说明、架构、审计、计划、速查、许可说明
 ├── samples/
@@ -237,6 +237,8 @@ Frontend / Mini App
 ```
 
 默认按工作负载分流：一问一答、摘要、改写、分类、抽取、轻量评分等非 agentic 调用走后端直连 LLM；深度调研、长任务、工具使用、Browser Use 和报告/PDF/表格等 workspace 产物走 InfiniSynapse。不要让前端直接持有 LLM provider key 或 InfiniSynapse API Key。
+
+单用户桌面 / 原生 BYOK 可以把 Electron main process、Tauri command 或 native layer 作为本机可信后端；renderer / WebView 仍然不能持 Key 或直连 InfiniSynapse。详见 `docs/playbooks/desktop-native-byok.md`。
 
 服务端至少保存：
 

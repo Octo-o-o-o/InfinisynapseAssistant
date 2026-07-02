@@ -36,6 +36,14 @@ x-lang: zh_CN
 
 上传接口使用 `multipart/form-data`。
 
+## 桌面 / 原生 BYOK
+
+- 单用户 Electron / Tauri / 原生应用可把 main process、Tauri command 或 native layer 作为本机可信后端，持有用户自己的 InfiniSynapse API Key。
+- Key 必须放系统 Keychain / Keystore / Credential Manager 或等价安全存储，不能进 renderer、WebView、localStorage、IndexedDB 或明文配置。
+- UI 只走受控 IPC / native bridge，不暴露任意 HTTP proxy、`getApiKey()` 或可控 `Authorization` header。
+- 多租户 SaaS、团队共享 Key、企业审计和跨设备恢复场景不适用本机 BYOK，仍应使用服务端业务路由。
+- 完整边界见 `docs/playbooks/desktop-native-byok.md`。
+
 ## LLM 调用路由
 
 - 非 agentic 的一问一答、摘要、改写、翻译、分类、字段抽取、轻量评分，默认由业务后端直连 LLM。
