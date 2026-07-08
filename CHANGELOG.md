@@ -27,6 +27,7 @@
 - TS/Python SDK multipart 上传现在和普通请求一致处理业务信封：`code !== 200`、token 失效码和 HTTP 错误都会抛 `InfiniSynapseError`，避免 HTTP 200 的上传业务错误被误当成功。
 - 扫描器 `INF-ENV-003` 收紧 `AUTHING_SERVER_URL` 路径判断：只接受裸 `/api`，`/api/`、`/apix` 或其它路径都会提示。
 - 清理 `docs/playbooks/downstream-projects.md` EOF 多余空行，保证 `git diff --check` 通过。
+- 反哺 ProjectValueLab 市场调研真实任务：排查表新增 Agent 内部并行子任务（delegation）因账户级配额报 `Exceeded maximum API request limit (0)` 的症状——Agent 会自动回退主任务串行执行、产物不受影响；需要真正并行时应由业务后端自发多个 `newTask`。
 
 ## [0.3.5] - 2026-06-24
 
