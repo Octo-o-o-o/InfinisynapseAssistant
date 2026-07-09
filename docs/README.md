@@ -14,6 +14,8 @@
 | 快速查接口和红线 | `docs/QUICK-REFERENCE.md` | `docs/reference/api-index.md`, `docs/reference/task-lifecycle.md` |
 | 安全接入产品 / 不泄露 API Key | `docs/playbooks/secure-integration.md` | `samples/templates/server-side-agent-flow.md`, `samples/sdk/` |
 | 桌面 / 原生 BYOK 接入 | `docs/playbooks/desktop-native-byok.md` | `docs/playbooks/secure-integration.md`, `docs/reference/task-lifecycle.md` |
+| 鸿蒙（HarmonyOS）app 接入 | `docs/playbooks/harmonyos-app-integration.md` | `docs/playbooks/secure-integration.md`, `docs/reference/task-lifecycle.md` |
+| 测试集成代码 / 评估 app 质量 | `docs/playbooks/testing-and-evaluation.md` | `samples/mock-server/README.md`, `docs/playbooks/decision-quality-loop.md` |
 | 成熟 SaaS / 老项目接入边界 | `docs/playbooks/existing-product-integration.md` | `docs/playbooks/secure-integration.md`, `docs/reference/task-lifecycle.md` |
 | 产物归档 / 自有对象存储 / 完整输出包 | `docs/playbooks/artifact-archiving.md` | `docs/playbooks/existing-product-integration.md`, `docs/reference/api-index.md` |
 | 决策包质量闭环 / Outcome 回访 / Watchlist delta / benchmark | `docs/playbooks/decision-quality-loop.md` | `docs/playbooks/artifact-archiving.md`, `infinisynapse-product-patterns` skill |
@@ -36,7 +38,7 @@
 | 目录或文件 | 定位 | 内容类型 |
 | --- | --- | --- |
 | `docs/reference/` | 从官方文档提炼出的事实基准 | AI 友好 + 官方文档内容 |
-| `docs/playbooks/` | 基于官方事实总结的核心场景做法（LLM 路由、安全接入、桌面 BYOK、RAG、Browser Use、分享等） | AI/人类友好 + 特定用法内容 |
+| `docs/playbooks/` | 基于官方事实总结的核心场景做法（LLM 路由、安全接入、桌面 BYOK、鸿蒙 app、RAG、Browser Use、分享、测试与评估等） | AI/人类友好 + 特定用法内容 |
 | `docs/CONTENT-MODEL.md` | 说明内容分类和维护边界 | 人类友好 + 特定用法内容 |
 | `docs/MAINTENANCE.md` | 上游同步、派生文档更新与发布前检查 | 人类友好 + 特定用法内容 |
 | `docs/QUICK-REFERENCE.md` | 高频规则和接口速查 | AI/人类友好 + 特定用法内容 |
@@ -46,6 +48,7 @@
 | `docs/LICENSE-NOTES.md` | 第三方文档快照和仓库许可说明 | 人类友好 |
 | `docs/PLAN.md` | 已完成项与后续改进路线图 | 人类友好 |
 | `docs/proposals/` | 基于 InfiniSynapse 的产品方案草案（外围，不进规则主线） | 人类友好 + 特定用法内容 |
+| `docs/plans/` | 阶段性调研与实施方案工作稿（如 `*.cursor.fable.md`；记录过程，不是规范入口） | 人类友好 |
 
 ## 维护边界
 

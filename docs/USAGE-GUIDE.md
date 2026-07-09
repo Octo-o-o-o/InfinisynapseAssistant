@@ -89,13 +89,20 @@ vendor/InfinisynapseAssistant/
 
 ### 2.1 具体怎么添加 skill
 
-按使用范围选择一种即可：
+最快方式：一键安装脚本（复制 skills 到目标项目的 `.agents/skills/` + `.claude/skills/`，并在目标项目 `AGENTS.md` 幂等写入引用块）：
+
+```bash
+bash tools/install-into.sh /path/to/your-app            # 安装
+bash tools/install-into.sh /path/to/your-app --dry-run  # 只看会做什么
+```
+
+手动方式按使用范围选择一种即可：
 
 | 范围 | 做法 | 适合 |
 | --- | --- | --- |
 | 只在本仓库开发 | 直接打开本仓库，使用 `.agents/skills/` | 维护规则包、写方案 |
 | 所有项目都可用 | 复制 `infinisynapse-*` 到全局 skills 目录 | 个人长期使用 |
-| 某个业务项目可用 | 复制到业务项目自己的 `.agents/skills/` | 团队项目、随仓库分发 |
+| 某个业务项目可用 | `tools/install-into.sh` 或手动复制到业务项目 `.agents/skills/` | 团队项目、随仓库分发 |
 | Claude Code | 先用 `tools/sync-skills.sh` 生成 `.claude/skills/`，再复制对应目录 | Claude Code 项目 |
 
 示例：
@@ -195,10 +202,13 @@ bash /Users/wangyixiao/WorkSpace/InfinisynapseAssistant/tools/hooks/lib/scan-inf
 | 判断轻量调用直连 LLM 还是走 InfiniSynapse | `docs/playbooks/llm-routing.md` |
 | 安全接入 / 不泄露 API Key | `docs/playbooks/secure-integration.md` |
 | 桌面 / 原生 BYOK 接入 | `docs/playbooks/desktop-native-byok.md` |
+| 鸿蒙（HarmonyOS）app 接入 | `docs/playbooks/harmonyos-app-integration.md` |
+| 测试集成代码 / 评估 app 输出质量 | `docs/playbooks/testing-and-evaluation.md` + `samples/mock-server/` |
 | 成熟 SaaS / 老项目接入边界 | `docs/playbooks/existing-product-integration.md` |
 | 决策包质量闭环 / Outcome 回访 / Watchlist delta / benchmark | `docs/playbooks/decision-quality-loop.md` |
-| RAG 资料 / 文件放哪里 | `docs/playbooks/rag-file-placement.md` |
+| RAG 资料 / 文件放哪里（含 Skill 上下文） | `docs/playbooks/rag-file-placement.md` |
 | 订阅共享数据源 / 知识库 | `docs/playbooks/market-subscriptions.md` |
+| 「使用 InfiniSynapse 登录」/ 代用户调用 | `docs/reference/api-index.md` §8 + `infinisynapse-server-api` skill |
 | 浏览器自动化或购物比价 | `docs/playbooks/browser-use.md` + `infinisynapse-browser-extension` skill |
 | 分享 / 公开只读结果页 | `docs/playbooks/task-sharing.md` |
 | 做报告写作类产品 | `infinisynapse-product-patterns` skill |

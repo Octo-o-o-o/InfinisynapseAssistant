@@ -38,9 +38,13 @@ if [ -f "$SCANNER" ]; then
   assert_contains_rule "tools/hooks/test-fixtures/bad-download-as-json.ts" "INF-DL-001"
   assert_exit "tools/hooks/test-fixtures/bad-wrong-success-code.ts" 1
   assert_contains_rule "tools/hooks/test-fixtures/bad-wrong-success-code.ts" "INF-API-001"
+  assert_exit "tools/hooks/test-fixtures/bad-harmonyos-direct.ets" 2
+  assert_contains_rule "tools/hooks/test-fixtures/bad-harmonyos-direct.ets" "INF-SEC-002"
   assert_exit "tools/hooks/test-fixtures/good-server-proxy.ts" 0
   assert_exit "tools/hooks/test-fixtures/good-deploy.env" 0
   assert_exit "tools/hooks/test-fixtures/good-doc-tokens.ts" 0
+  assert_exit "tools/hooks/test-fixtures/good-harmonyos-proxy.ets" 0
+  assert_exit "tools/hooks/test-fixtures/does-not-exist.ts" 64
   # --json 必须合法
   if bash "$SCANNER" --json "tools/hooks/test-fixtures/bad-authing.env" | python3 -m json.tool >/dev/null 2>&1; then
     ok "scanner --json 输出合法 JSON"
@@ -49,9 +53,9 @@ if [ -f "$SCANNER" ]; then
   else
     skip "scanner --json 校验需要 python3"
   fi
-  # 自检：自家 SDK / 样例不能被误报（exit 0）
+  # 自检：自家 SDK / 样例 / mock server 不能被误报（exit 0）
   selfclean=1
-  for f in $(find samples -type f \( -name '*.ts' -o -name '*.tsx' -o -name '*.py' \)); do
+  for f in $(find samples -type f \( -name '*.ts' -o -name '*.tsx' -o -name '*.py' -o -name '*.mjs' -o -name '*.ets' \)); do
     bash "$SCANNER" "$f" >/dev/null 2>&1 || { selfclean=0; echo "  误报: $f" >&2; }
   done
   [ "$selfclean" -eq 1 ] && ok "扫描器不误报自家 samples/" || bad "扫描器误报了 samples/ 下文件"
@@ -133,6 +137,27 @@ grep -q "Runtime guard 和预算" docs/playbooks/existing-product-integration.md
 grep -q "final/" docs/playbooks/existing-product-integration.md && ok "成熟产品 playbook 含 final/ 归档规则" || bad "成熟产品 playbook 缺 final/ 归档规则"
 grep -q "后台通知不是 provider webhook" docs/reference/task-lifecycle.md && ok "任务生命周期含后台通知边界" || bad "任务生命周期缺后台通知边界"
 grep -q "成熟产品守卫" docs/QUICK-REFERENCE.md && ok "速查含成熟产品守卫" || bad "速查缺成熟产品守卫"
+grep -q "Asset Store Kit" docs/playbooks/harmonyos-app-integration.md && ok "鸿蒙 playbook 含 Asset Store Kit 存 Key 规则" || bad "鸿蒙 playbook 缺 Asset Store Kit 规则"
+grep -q "requestInStream" docs/playbooks/harmonyos-app-integration.md && ok "鸿蒙 playbook 含 SSE 消费方案" || bad "鸿蒙 playbook 缺 SSE 消费方案"
+grep -q "黄金任务" docs/playbooks/testing-and-evaluation.md && ok "测试评估 playbook 含黄金任务集" || bad "测试评估 playbook 缺黄金任务集"
+grep -q "mock-server" docs/playbooks/testing-and-evaluation.md && ok "测试评估 playbook 指向 mock server" || bad "测试评估 playbook 缺 mock server 入口"
+grep -q "/api/ai_skill" docs/reference/api-index.md && ok "api-index 含 Skill 管理端点" || bad "api-index 缺 Skill 管理端点"
+grep -q "/api/auth/partner" docs/reference/api-index.md && ok "api-index 含 Partner SSO 端点" || bad "api-index 缺 Partner SSO 端点"
+
+# ---- 5c. install-into.sh 行为（幂等 + 产物齐全）----
+INSTALL_T="$(mktemp -d)"
+printf '# existing agents file\n' > "$INSTALL_T/AGENTS.md"
+if bash tools/install-into.sh "$INSTALL_T" >/dev/null 2>&1 && bash tools/install-into.sh "$INSTALL_T" >/dev/null 2>&1; then
+  marks="$(grep -c 'infinisynapse-assistant:begin' "$INSTALL_T/AGENTS.md" 2>/dev/null || echo 0)"
+  if [ "$marks" = "1" ] && [ -f "$INSTALL_T/.agents/skills/infinisynapse-server-api/SKILL.md" ] && [ -f "$INSTALL_T/.claude/skills/infinisynapse-server-api/SKILL.md" ]; then
+    ok "install-into.sh 幂等且 skills 安装齐全"
+  else
+    bad "install-into.sh 产物不完整或标记块重复 (markers=$marks)"
+  fi
+else
+  bad "install-into.sh 执行失败"
+fi
+rm -rf "$INSTALL_T"
 
 # ---- 5b. 本地方案草稿不应进入仓库主线 ----
 for p in \
@@ -155,7 +180,7 @@ grep -q "AUTHING_SERVER_URL" "upstream-docs/infinisynapse-site/zh/markdown/priva
 
 # ---- 7. 参考文档与上游端点对齐（抽样）----
 API_INDEX="docs/reference/api-index.md"
-for ep in "/api/ai/events" "/api/ai/message" "/api/ai_task/getTaskWorkspace" "/api/tools/storage/downloadTaskFile"; do
+for ep in "/api/ai/events" "/api/ai/message" "/api/ai_task/getTaskWorkspace" "/api/tools/storage/downloadTaskFile" "/api/ai_skill/upload"; do
   if grep -q "$ep" "$API_INDEX" && grep -q "$ep" "$ZH"; then
     ok "api-index 与上游均含 $ep"
   else

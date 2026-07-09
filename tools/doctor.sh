@@ -28,10 +28,18 @@ require_file "upstream-docs/infinisynapse-site/zh/markdown/private-deployment-gu
 require_file "upstream-docs/infinisynapse-site/zh/markdown/server-api-reference.md"
 require_file "upstream-docs/infinisynapse-site/zh/markdown/cli-api-reference.md"
 require_file "upstream-docs/infinisynapse-site/zh/markdown/chrome-plugin-install.md"
+require_file "upstream-docs/infinisynapse-site/zh/markdown/connect-data-and-knowledge-base.md"
+require_file "upstream-docs/infinisynapse-site/zh/markdown/existing-product-integration-playbook.md"
+require_file "upstream-docs/infinisynapse-site/zh/markdown/partner-sso-integration-guide.md"
+require_file "upstream-docs/infinisynapse-site/zh/markdown/vibe-coding-guide.md"
 require_file "upstream-docs/infinisynapse-site/markdown/private-deployment-guide.md"
 require_file "upstream-docs/infinisynapse-site/markdown/server-api-reference.md"
 require_file "upstream-docs/infinisynapse-site/markdown/cli-api-reference.md"
 require_file "upstream-docs/infinisynapse-site/markdown/chrome-plugin-install.md"
+require_file "upstream-docs/infinisynapse-site/markdown/connect-data-and-knowledge-base.md"
+require_file "upstream-docs/infinisynapse-site/markdown/existing-product-integration-playbook.md"
+require_file "upstream-docs/infinisynapse-site/markdown/partner-sso-integration-guide.md"
+require_file "upstream-docs/infinisynapse-site/markdown/vibe-coding-guide.md"
 require_file "upstream-docs/infinisynapse-site/assets/docs/server-api/api-key-management-entry.png"
 require_file "upstream-docs/infinisynapse-site/assets/docs/server-api/api-key-management-page.png"
 require_file "upstream-docs/infinisynapse-site/assets/docs/server-api/compute-resource-selector.png"
@@ -48,6 +56,8 @@ require_file "docs/playbooks/browser-use.md"
 require_file "docs/playbooks/task-sharing.md"
 require_file "docs/playbooks/plan-act-approval.md"
 require_file "docs/playbooks/downstream-projects.md"
+require_file "docs/playbooks/harmonyos-app-integration.md"
+require_file "docs/playbooks/testing-and-evaluation.md"
 require_file "docs/playbooks/assets/secure-integration-trust-boundary.svg"
 
 # 钩子与扫描器
@@ -56,14 +66,16 @@ require_file "tools/hooks/lib/scan-infinisynapse.sh"
 require_file "tools/hooks/lib/parse-hook-input.sh"
 require_file ".claude/settings.json"
 
-# SDK 参考实现
+# SDK 参考实现与 mock server
 require_file "samples/sdk/typescript/src/client.ts"
 require_file "samples/sdk/typescript/src/sse.ts"
 require_file "samples/sdk/python/infinisynapse_client.py"
+require_file "samples/mock-server/server.mjs"
 
 # skill 源与镜像
 require_file ".agents/skills/manifest.json"
 require_file "tools/sync-skills.sh"
+require_file "tools/install-into.sh"
 
 # 扫描器自检：good fixture 必须干净，bad fixture 必须触发
 if bash "$ROOT/tools/hooks/lib/scan-infinisynapse.sh" "$ROOT/tools/hooks/test-fixtures/good-server-proxy.ts" >/dev/null 2>&1; then

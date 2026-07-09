@@ -13,7 +13,7 @@
 6. docs/reference/capabilities.md — 平台能力总览（能力→端点）
 7. docs/reference/api-index.md — 端点总目录（事实基准）
 8. docs/reference/task-lifecycle.md — SSE 事件 / 消息类型 / 长任务时序 / 恢复
-9. docs/playbooks/ — LLM 调用路由、安全接入、桌面/原生 BYOK、成熟产品接入、RAG/文件放置、市场订阅、Browser Use、任务分享、计划/执行审批、下游项目反哺、报错排查等核心场景的特定用法
+9. docs/playbooks/ — LLM 调用路由、安全接入、桌面/原生 BYOK、鸿蒙 app、成熟产品接入、RAG/文件放置、市场订阅、Browser Use、任务分享、计划/执行审批、测试与评估、下游项目反哺、报错排查等核心场景的特定用法
    （docs/reference/glossary.md 为易混术语速查）
 10. 任务对应的 skill（见下）
 
@@ -38,16 +38,18 @@
 
 ## 可跑 SDK 与样例
 
-- samples/sdk/typescript/ — 零依赖 client + 纯函数 SSE 解析 + runTask + Express 代理 + 离线单测
+- samples/sdk/typescript/ — 零依赖 client + 纯函数 SSE 解析 + runTask + Express 代理 + 离线单测 + mock 集成测试 + opt-in 真实冒烟
 - samples/sdk/python/ — 标准库 client + SSE 解析 + run_task + 离线单测
+- samples/mock-server/ — 零依赖模拟器，无 Key 跑通 SSE→newTask→产物 离线集成测试
 - samples/templates/curl-quickstart.md — 纯 curl 跑通一次长任务
 - samples/templates/server-side-agent-flow.md — 后端代理字段与时序
 
 ## 实时护栏
 
-- tools/hooks/lib/scan-infinisynapse.sh — 反模式扫描器（INF-SEC/SSE/DL/ENV 规则）
+- tools/hooks/lib/scan-infinisynapse.sh — 反模式扫描器（INF-SEC/SSE/DL/API/ENV 规则；识别鸿蒙 .ets 客户端直连）
 - tools/hooks/post-edit.sh + .claude/settings.json — Claude Code PostToolUse 钩子
 - npm run scan -- <file> — 手动扫描
+- tools/install-into.sh <target> — 一键把 skills + 规则入口装进下游项目
 
 ## 上游文档快照
 
