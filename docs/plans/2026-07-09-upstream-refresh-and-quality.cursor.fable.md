@@ -218,3 +218,25 @@ code-reviewer 子代理评审 5 个提交：无 BLOCKER，2 MAJOR / 3 MINOR / 3 
 | NIT-1/2/3 | manifest 未镜像 `.claude/skills`、`grep -c \|\| echo 0` 双行输出、api-index 头部措辞 | 全部修复 |
 
 修复后回归：`npm test PASS=80 FAIL=0`，doctor / sync-skills --check / git diff --check 全绿。
+
+## 10. 第二轮复审与修复（2026-07-09，推送前最终把关）
+
+### 自查修复
+
+- 扫描器示例 `codex-precommit.sh` 与 `.github/instructions` 扩展名列表补 `.ets` 等，对齐 post-edit.sh。
+- TS SDK `npm run typecheck` 修为真实可过：补 `@types/node`（含 lockfile）、mock server 补 `server.d.mts` 类型声明、可选依赖 express 的示例从类型检查排除；实测 `tsc --noEmit` exit 0。
+- `CONTENT-MODEL.md` 文件放置表补方法论/`SKILL.md` 行；CHANGELOG 折叠段标题层级规范化；TS SDK README 文件表补全。
+
+### Bugbot 全量 diff 复审（5 项，全部修复并实测）
+
+| 级别 | 问题 | 修复与验证 |
+| --- | --- | --- |
+| HIGH | mock server CLI 入口用 `file://${argv[1]}` 判断主模块，相对路径启动时永不匹配、进程直接退出 | 改 `pathToFileURL(argv[1]).href`；实测 `node samples/mock-server/server.mjs --port 8790` 正常启动并响应 ping |
+| HIGH | `install-into.sh` 重装时若 end 标记缺失，awk 会把标记后的原有内容整段删除 | 加护栏：begin 在而 end 缺 → 报错 exit 65 不动文件；实测用户内容保留 |
+| MEDIUM | begin 检测用子串（grep -F）而删除用整行精确匹配（awk `$0==`），标记行带尾随空格时旧块删不掉、新块又追加 → 重复托管块 | awk 改 `index()` 子串匹配，与 grep 语义一致；实测尾随空格重装后标记仍唯一 |
+| MEDIUM | doctor 漏 require `desktop-native-byok.md`（及 llm-routing/existing-product-integration/artifact-archiving/decision-quality-loop） | 5 个 playbook 全部纳入 require_file |
+| MEDIUM | `llms.txt` skills 清单未反映 Skill 管理 / Partner SSO / CLI 开源 | 已更新 |
+
+附带发现：macOS bash 3.2 会把 `$END_MARK）`（全角括号紧邻变量）并入变量名导致 unbound variable，改用 `${END_MARK}` 显式界定。
+
+复审后回归：`npm test PASS=80 FAIL=0`、doctor 全绿、typecheck exit 0、mock CLI 与 install-into 边界均实测通过。

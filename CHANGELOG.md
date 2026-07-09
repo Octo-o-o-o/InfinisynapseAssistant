@@ -41,6 +41,9 @@
 
 ### Fixed
 - 扫描器对不存在的文件路径由静默 exit 0 改为 stderr 提示 + exit 64，防止 CI wrapper 传错路径假绿；test-suite 加断言。
+- mock server CLI 入口改用 `pathToFileURL` 判断主模块，修复相对路径启动（`node samples/mock-server/server.mjs`）时进程直接退出的问题。
+- `install-into.sh` 托管块处理加固：end 标记缺失时报错退出（65）而不是截断下游 AGENTS.md；标记匹配改子串语义，标记行带尾随空格也能正确替换旧块，不再产生重复托管段。
+- `doctor.sh` 补齐 5 个漏检 playbook（llm-routing / desktop-native-byok / existing-product-integration / artifact-archiving / decision-quality-loop）；`llms.txt` skills 清单同步 Skill 管理 / Partner SSO / CLI 开源事实。
 
 ### 以下为 0.3.5 之后累积、随 0.4.0 一并发布的变更
 

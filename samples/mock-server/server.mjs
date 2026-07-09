@@ -15,7 +15,7 @@
 //   程序化：const srv = await startMockServer({ port: 0 }); ...; await srv.close();
 
 import http from "node:http";
-import { URL } from "node:url";
+import { URL, pathToFileURL } from "node:url";
 
 const enc = new TextEncoder();
 
@@ -257,8 +257,8 @@ export async function startMockServer(options = {}) {
   };
 }
 
-// CLI 入口
-if (import.meta.url === `file://${process.argv[1]}`) {
+// CLI 入口（pathToFileURL 保证相对路径调用如 `node samples/mock-server/server.mjs` 也能匹配）
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const portArg = process.argv.indexOf("--port");
   const port = portArg > 0 ? Number(process.argv[portArg + 1]) : 8787;
   const srv = await startMockServer({ port });

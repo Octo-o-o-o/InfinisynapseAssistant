@@ -72,11 +72,17 @@ if [[ $DRY_RUN -eq 1 ]]; then
   say "[dry-run] 会写入/替换标记块到 $AGENTS_FILE"
 else
   if [[ -f "$AGENTS_FILE" ]] && grep -qF "$BEGIN_MARK" "$AGENTS_FILE"; then
-    # 先删旧块（BSD/GNU awk 兼容：-v 值必须单行，块正文单独追加），
-    # 并吃掉尾部空行，避免重复安装时分隔空行累积
+    # 安全护栏：begin 存在但 end 缺失时中止，避免把标记之后的原有内容整段删掉
+    if ! grep -qF "$END_MARK" "$AGENTS_FILE"; then
+      echo "install-into.sh: $AGENTS_FILE 里找到 begin 标记但缺少 end 标记（${END_MARK}）；请先手工修复该托管块再重试" >&2
+      exit 65
+    fi
+    # 先删旧块（BSD/GNU awk 兼容：-v 值必须单行，块正文单独追加）。
+    # 标记按子串匹配（与上面的 grep -F 一致），标记行带尾随空格也能删除，避免残留旧块导致重复；
+    # 同时吃掉尾部空行，避免重复安装时分隔空行累积。
     awk -v begin="$BEGIN_MARK" -v end="$END_MARK" '
-      $0 == begin { inblock=1; next }
-      $0 == end { inblock=0; next }
+      index($0, begin) { inblock=1; next }
+      index($0, end) { inblock=0; next }
       inblock { next }
       NF { for (i = 0; i < blank; i++) print ""; blank = 0; print; next }
       { blank++ }

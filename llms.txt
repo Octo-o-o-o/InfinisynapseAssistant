@@ -30,10 +30,10 @@
 
 ## Skills（唯一源 .agents/skills/，镜像 .claude/skills/）
 
-- infinisynapse-server-api — SDK / 后端 route / SSE / 任务 / 数据源 / RAG / 上传下载
-- infinisynapse-product-patterns — 高考助手 / 购物比价 / 报告快写等任务型产品编排
+- infinisynapse-server-api — SDK / 后端 route / SSE / 任务 / 数据源 / RAG / Skill 管理 / Partner SSO / 上传下载
+- infinisynapse-product-patterns — 高考助手 / 购物比价 / 报告快写等任务型产品编排（含 Skill 上下文模式）
 - infinisynapse-deployment — 私有化部署 / Docker Compose / .env / 登录失败 / OOM
-- infinisynapse-cli — agent_infini CLI 映射与排查
+- infinisynapse-cli — agent_infini CLI 一键安装 / 映射与排查（已开源，MIT）
 - infinisynapse-browser-extension — Browser Use / Chrome 插件 / 网页自动化
 
 ## 可跑 SDK 与样例
