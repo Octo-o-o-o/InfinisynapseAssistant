@@ -1,7 +1,7 @@
 # InfiniSynapse Server API Reference
 
 
-本文是 InfiniSynapse 服务端（Server）面向外部用户/SDK 的 HTTP API 参考。通过一个 API Key（Bearer Token）即可直接调用，完成多轮 AI 任务对话、数据源管理、RAG 知识库管理、文件上传与下载等操作，无需依赖前端界面。
+本文是 InfiniSynapse 服务端（Server）面向外部用户/SDK 的 HTTP API 参考。通过一个 API Key（Bearer Token）即可直接调用，完成多轮 AI 任务对话、数据源管理、RAG 知识库管理、Skill 管理、文件上传与下载等操作，无需依赖前端界面。
 
 > 仅需命令行集成的用户，可优先查阅《InfiniSynapse CLI API Reference》；本文面向需要直接发起 HTTP 请求的开发者。
 
@@ -480,7 +480,89 @@ curl -X POST "https://app.infinisynapse.cn/api/ai/message" \
 
 自动化订阅时建议先查 `my`，再查 `public`；只对确认免费的市场条目自动调用 `subscribe`。订阅完成后，再回到 Server API 使用 `GET /api/ai_rag_sdk?source=all&subscribeSource=all&keyword=<name>` 查找用户空间中的知识库，并用 `POST /api/ai_rag_sdk/enabled` 启用。
 
-## 6. 文件上传
+## 6. Skill 管理
+
+Skill 可以通过两种方式进入 Agent 工作流：
+
+- **安装到用户 Skill 库**：使用 `/api/ai_skill/*` 管理用户级 Skill，安装后 active 状态的 Skill 会进入 Agent 可用 Skill 列表，Agent 可通过 `use_skill` 加载。
+- **作为单次任务上下文上传**：例如报告快写允许用户上传包含 `SKILL.md` 的目录或方法论文档；这些文件随当前任务进入 sandbox / 工作区，只影响本次报告任务，不会安装为用户级 Skill。
+
+### 6.1 Skill 市场发现
+
+Skill 市场发现属于账号/市场 API，国内基础地址为 `https://api.infinisynapse.cn/api`，海外基础地址为 `https://api.infinisynapse.com/api`。
+
+| 接口 | 方法 | 参数 | 说明 |
+|----|----|----|----|
+| `/skill/public/getSkillList` | GET | `pageNum`、`pageSize`、`alias`、`tag`、`status` | 获取公开 Skill 市场列表 |
+| `/skill/getSkillTags` | GET | \- | 获取 Skill 标签列表 |
+| `/skill/downloadSkill` | GET | `id`、`version` | 获取指定 Skill 版本的下载信息 `{ name, version, size, url }`；通常由 `/api/ai_skill/install` 或 `/api/ai_skill/update` 在服务端内部调用 |
+
+### 6.2 已安装 Skill 管理
+
+控制器前缀：`/api/ai_skill`。这些接口管理当前用户已安装的 Skill，需携带当前用户的 Bearer Token。
+
+| 接口 | 方法 | 请求体/参数 | 说明 |
+|----|----|----|----|
+| `/api/ai_skill/install` | POST | `{ skillId, name, alias, author, version, logo?, intro?, tags? }` | 从 Skill 市场下载 zip 并安装到当前用户 Skill 目录 |
+| `/api/ai_skill/update` | POST | `{ skillId, name, alias, author, version, logo?, intro?, tags? }` | 下载指定新版本并覆盖安装 |
+| `/api/ai_skill/uninstall` | POST | `{ skillId }` | 卸载远程市场安装的 Skill，并删除本地安装目录 |
+| `/api/ai_skill/toggleStatus` | POST | `{ skillId, status }`，`status` 为 `active` / `inactive` | 启用或禁用已安装 Skill |
+| `/api/ai_skill/installedVersions` | GET | \- | 返回 `{ [skillId]: { version, status } }`，用于判断市场 Skill 是否已安装或可更新 |
+| `/api/ai_skill/list` | GET | `pageNum`、`pageSize`、`keyword` | 分页获取当前用户已安装 Skill 列表 |
+
+`install` 请求体示例：
+
+```
+{
+  "skillId": "507f1f77bcf86cd799439011",
+  "name": "market-research",
+  "alias": "市场研究",
+  "author": "InfiniSynapse",
+  "version": "1.0.0",
+  "intro": "市场调研与竞争分析流程",
+  "tags": "[\"research\", \"report\"]"
+}
+```
+
+
+### 6.3 本地 Skill 上传
+
+本地上传适合团队自定义 Skill 或尚未发布到市场的 Skill。上传包必须是 zip，解压后的任意层级中必须包含 `SKILL.md`；服务端会自动定位 `SKILL.md` 所在目录，并把该目录内容安装到当前用户的 Skill 目录。上传同名本地 Skill 会覆盖原内容。
+
+| 接口 | 方法 | 请求体/参数 | 说明 |
+|----|----|----|----|
+| `/api/ai_skill/upload` | POST | `multipart/form-data`：`file` + `name`、`alias`、`author`、`status`、`version`，可选 `logo`、`intro`、`tags` | 上传本地 Skill zip，安装为 `source=local` 的用户级 Skill |
+| `/api/ai_skill/editLocal` | POST | `multipart/form-data`：`id` + 可选 `file`、`name`、`alias`、`author`、`status`、`version`、`logo`、`intro`、`tags` | 编辑本地 Skill 元信息；传 `file` 时同步替换 Skill 文件 |
+| `/api/ai_skill/deleteLocal/:id` | POST | 路径 `id` | 删除本地上传的 Skill 文件和数据库记录 |
+
+```
+curl -X POST "https://app.infinisynapse.cn/api/ai_skill/upload" \
+  -H "Authorization: Bearer <你的 Token>" \
+  -F "name=report-methodology" \
+  -F "alias=报告方法论" \
+  -F "author=Data Team" \
+  -F "status=active" \
+  -F "version=1.0.0" \
+  -F 'tags=["report","methodology"]' \
+  -F "file=@./report-methodology.zip"
+```
+
+
+### 6.4 报告快写的 Skill 上下文模式
+
+报告快写已经支持上传「Skills / 方法论上下文」：用户可以上传包含 `SKILL.md` 的目录，也可以上传单独的 Markdown、PDF、Word、表格或模板文档。这个模式**不会**调用 `/api/ai_skill/upload` 安装全局 Skill，而是把 Skill 目录树、文件路径和 `SKILL.md` 位置写入报告任务 prompt；当 Agent 需要读取文件时，通过 `upload_file_to_sandbox` 请求客户端/服务端上传对应文件，再继续写作。
+
+自建报告类 mini-app 可以复用这个模式：
+
+1.  前端收集 Skill 目录或文档，保留相对路径、文件名、大小、MIME、是否包含 `SKILL.md` 等元数据。
+2.  创建任务前，把目录树放入业务层字段，例如 `skillContext`；把真实文件作为 multipart 文件队列上传到自己的服务端业务路由。
+3.  服务端在 `POST /api/ai/message` 的 `text` 中写清 Skill 目录树和读取要求，提示 Agent 优先读取 `SKILL.md` 并遵循相关步骤。
+4.  SSE 中收到 `message.ask=upload_file_to_sandbox` 时，使用 `POST /api/ai/upload?taskId=` 或 `POST /api/tools/taskUpload/:taskId` 上传队列中的对应文件。
+5.  上传后用 `POST /api/ai/message`，`type=askResponse`，把上传结果 JSON 回传给 Agent。
+
+这种模式适合「一次报告任务临时带入方法论、规范、模板」；如果希望所有后续任务都能通过 `use_skill` 发现并加载同一 Skill，应使用 6.3 的本地 Skill 上传或 6.2 的市场安装。
+
+## 7. 文件上传
 
 上传相关接口注册在根路径下（即 `/api/...`）。除任务上传外，普通上传以「目录」组织。
 
@@ -516,7 +598,7 @@ curl -X POST "https://app.infinisynapse.cn/api/tools/taskUpload/task-001?subdir=
 ```
 
 
-## 7. 文件存储与下载
+## 8. 文件存储与下载
 
 普通文件存储控制器前缀为 `/api/storage`；任务工作区下载在当前 Server API 中使用 `/api/tools/storage` 前缀。
 
@@ -534,7 +616,7 @@ curl "https://app.infinisynapse.cn/api/tools/storage/downloadTaskFile/task-001?p
 ```
 
 
-## 8. 错误处理
+## 9. 错误处理
 
 | 现象 | 处理建议 |
 |----|----|
@@ -544,21 +626,22 @@ curl "https://app.infinisynapse.cn/api/tools/storage/downloadTaskFile/task-001?p
 | HTTP `404` | 资源/文件不存在或无权访问 |
 | SSE 无数据 | 检查 `Authorization` 头与网络，确认已先建立 `/api/ai/events` 连接再发消息 |
 
-## 9. 典型调用流程
+## 10. 典型调用流程
 
 1.  建立 SSE 连接：`GET /api/ai/events?connId=<uuid>`。
 2.  准备资源：如需共享市场资源，先通过数据源市场 API 或 RAG 市场 API 订阅；随后用 `GET /api/ai_database/list`、`GET /api/ai_rag_sdk` 查找资源，并按需 `POST /api/ai_database/enabled`、`POST /api/ai_rag_sdk/enabled` 启用。
-3.  新建任务：`POST /api/ai/message`（`type=newTask`），从 SSE 接收实时回复。
-4.  如 Agent 请求上传本地文件：`POST /api/ai/upload?taskId=` 或 `POST /api/tools/taskUpload/:taskId`，然后 `POST /api/ai/message`（`type=askResponse`）回传上传结果。
-5.  多轮追问：`POST /api/ai/message`（`type=askResponse`）。
-6.  取消任务：`GET /api/ai_task/cancelTask?taskId=` 或 `POST /api/ai_task/cancelTask?taskId=`。
-7.  查看结果：`GET /api/ai_task/getTaskWorkspace/:id` 列出产物，`POST /api/ai_task/previewFile` 预览，`GET /api/tools/storage/downloadTaskFile/:taskId?path=` 下载。
+3.  准备 Skill：需要长期复用时，先通过 `/api/ai_skill/install` 或 `/api/ai_skill/upload` 安装并启用；只对单次任务生效时，可把包含 `SKILL.md` 的目录作为任务上下文上传。
+4.  新建任务：`POST /api/ai/message`（`type=newTask`），从 SSE 接收实时回复。
+5.  如 Agent 请求上传本地文件：`POST /api/ai/upload?taskId=` 或 `POST /api/tools/taskUpload/:taskId`，然后 `POST /api/ai/message`（`type=askResponse`）回传上传结果。
+6.  多轮追问：`POST /api/ai/message`（`type=askResponse`）。
+7.  取消任务：`GET /api/ai_task/cancelTask?taskId=` 或 `POST /api/ai_task/cancelTask?taskId=`。
+8.  查看结果：`GET /api/ai_task/getTaskWorkspace/:id` 列出产物，`POST /api/ai_task/previewFile` 预览，`GET /api/tools/storage/downloadTaskFile/:taskId?path=` 下载。
 
-## 10. 参考已落地 App 的 API 使用场景与组合
+## 11. 参考已落地 App 的 API 使用场景与组合
 
 真实 mini-app 通常不要把 API Key 暴露到浏览器。推荐在自己的服务端实现一个业务路由，由服务端持有 API Key、组装 prompt、转发文件和读取任务产物；前端只和自己的业务路由通信。
 
-### 10.1 通用 Agent 任务骨架
+### 11.1 通用 Agent 任务骨架
 
 适用于高考助手、购物比价、报告快写等所有需要 Agent 长任务的应用。
 
@@ -570,7 +653,7 @@ curl "https://app.infinisynapse.cn/api/tools/storage/downloadTaskFile/task-001?p
 6.  遇到 `message.ask=completion_result` 或 `message.say=completion_result` 后，按任务类型读取消息、工作区文件或下载产物。
 7.  用户中止时调用 `GET /api/ai_task/cancelTask?taskId=` 或 `POST /api/ai_task/cancelTask?taskId=`，并在自己的业务数据库里标记任务状态。
 
-### 10.2 高考助手：表单输入 + 可选文件 + PDF 结果
+### 11.2 高考助手：表单输入 + 可选文件 + PDF 结果
 
 高考志愿/专业咨询类 App 的核心是「一次表单输入生成结构化报告」。这类应用通常不需要浏览器插件。
 
@@ -584,7 +667,7 @@ curl "https://app.infinisynapse.cn/api/tools/storage/downloadTaskFile/task-001?p
 | 结果下载 | `GET /api/tools/storage/downloadTaskFile/:taskId?path=` | 下载 PDF、图片或其他最终文件 |
 | 分享结果 | `POST /api/ai_task/setShare` | 需要公开只读结果页时，把任务设为公开，再用公开任务接口读取 |
 
-### 10.3 购物比价助手：Chrome 插件 + 实时 Agent + 消息结果
+### 11.3 购物比价助手：Chrome 插件 + 实时 Agent + 消息结果
 
 购物类 App 的关键是让 Agent 能看到用户正在浏览的商品页、搜索页或多个电商页面。这里通常先检查 Chrome 插件是否在线，再启动任务。
 
@@ -597,13 +680,14 @@ curl "https://app.infinisynapse.cn/api/tools/storage/downloadTaskFile/task-001?p
 | 恢复与轮询 | `GET /api/ai_task/getUiMessageById?id=` | 用户离开页面后回来，可用任务 ID 恢复最近消息 |
 | 停止任务 | `GET /api/ai_task/cancelTask?taskId=` 或 `POST /api/ai_task/cancelTask?taskId=` | 用户换商品、换预算或不想继续时取消正在跑的 Agent |
 
-### 10.4 报告快写：批量资料上传 + 知识/数据资源 + 工作区产物
+### 11.4 报告快写：批量资料上传 + 知识/数据资源 + 工作区产物
 
 报告类 App 的核心不是只拿一段回答，而是让 Agent 在任务工作区里持续生成 Markdown、图表、PDF、Word 等文件。
 
 | 阶段 | API 组合 | 使用方式 |
 |----|----|----|
 | 上传用户资料 | `POST /api/tools/taskUpload/:taskId?subdir=upload_documents&naming=original` | 把 Word、PDF、Markdown、表格等原始资料归档到任务工作区固定目录，便于 Agent 引用 |
+| 上传 Skill 上下文 | 业务层 multipart `skillContext` + `skillFiles`，底层响应 `upload_file_to_sandbox` | 把包含 `SKILL.md` 的目录、方法论文档或模板作为单次报告任务上下文；Agent 先读 `SKILL.md` 再按其步骤写作 |
 | 启用资源 | `GET /api/ai_database/list`、`POST /api/ai_database/enabled`、`GET /api/ai_rag_sdk`、`POST /api/ai_rag_sdk/enabled` | 如果报告需要数据库或知识库，先列出并启用相关资源，再创建任务 |
 | 创建写作任务 | `GET /api/ai/events` + `POST /api/ai/message` | `text` 中写清报告目标、读者、结构、引用要求和已上传文件目录；使用 `autoApprovalSettings` 减少工具调用确认 |
 | 补充资料 | `POST /api/ai/upload?taskId=` + `POST /api/ai/message` | 对 Agent 在对话中主动请求的临时文件，走 sandbox 上传并用 `askResponse` 继续 |
@@ -612,11 +696,12 @@ curl "https://app.infinisynapse.cn/api/tools/storage/downloadTaskFile/task-001?p
 | 下载/内联渲染 | `GET /api/tools/storage/downloadTaskFile/:taskId?path=` | 下载最终文件；图片、SVG、PDF 可加 `inline=1` 用于报告预览页嵌入 |
 | 多轮修订 | `POST /api/ai/message`（`type=askResponse`） | 用户对报告提出修改意见后，继续同一个任务，不要新建任务丢失上下文 |
 
-### 10.5 组合原则
+### 11.5 组合原则
 
 - **先连 SSE，再发任务**：长任务最稳的顺序是先建立 `/api/ai/events`，再调用 `/api/ai/message`，避免错过早期状态。
 - **服务端托管凭据和状态**：API Key、`taskId`、文件路径、分享状态、业务用户 ID 都应保存在服务端，前端只拿业务结果。
 - **区分两类上传**：`/api/ai/upload?taskId=` 用于响应 Agent 的 sandbox 上传请求；`/api/tools/taskUpload/:taskId` 适合应用主动把资料归档到任务工作区。
+- **区分两类 Skill**：用户级 Skill 走 `/api/ai_skill/*` 安装、上传、启停；报告快写这类单次任务方法论上下文走任务文件上传链路，不会自动进入用户 Skill 库。
 - **结果优先走工作区**：只展示文本时可读 SSE 消息；需要下载、预览、版本化或导出时，应使用 `getTaskWorkspace`、`previewFile` 和 `downloadTaskFile`。
 - **资源在任务前启用**：数据库和知识库应在 `newTask` 前完成市场订阅、list/enabled，否则 Agent 可能看不到预期资源。
 - **恢复能力要前置设计**：mini-app 应保存 `taskId`、`connId`、用户输入、上传文件映射和最后状态，刷新页面后用 `getUiMessageById` 与 `getTaskWorkspace` 恢复。
