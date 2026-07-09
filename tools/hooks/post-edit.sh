@@ -25,7 +25,7 @@ SCANNER="$HERE/lib/scan-infinisynapse.sh"
 base="$(basename "$HOOK_FILE_PATH")"
 relevant=0
 case "$base" in
-  *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs|*.py|*.go|*.java|*.kt|*.rb|*.php) relevant=1;;
+  *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs|*.ets|*.py|*.go|*.java|*.kt|*.rb|*.php) relevant=1;;
   .env|.env.*|*.env) relevant=1;;
   *.yml|*.yaml) relevant=1;;
   *compose*|*.tf|*.toml) relevant=1;;
