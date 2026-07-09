@@ -10,7 +10,8 @@
   "scripts": {
     "test": "node --experimental-strip-types --test test/*.test.ts",
     "check": "for f in src/*.ts; do node --experimental-strip-types --check \"$f\"; done",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "smoke:live": "node --experimental-strip-types examples/live-smoke.ts"
   },
   "keywords": ["infinisynapse", "sse", "agent", "sdk", "server-api"],
   "engines": {
