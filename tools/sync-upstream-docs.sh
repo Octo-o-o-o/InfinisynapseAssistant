@@ -31,29 +31,35 @@ convert() {
   fi
 }
 
-fetch "$BASE/zh/docs" "$ZH_HTML_DIR/docs-index.html"
-fetch "$BASE/zh/docs/Chrome%20Plugin%20Install" "$ZH_HTML_DIR/chrome-plugin-install.html"
-fetch "$BASE/zh/docs/InfiniSynapse%20CLI%20API%20Reference" "$ZH_HTML_DIR/cli-api-reference.html"
-fetch "$BASE/zh/docs/InfiniSynapse%20Private%20Deployment%20Guide" "$ZH_HTML_DIR/private-deployment-guide.html"
-fetch "$BASE/zh/docs/InfiniSynapse%20Server%20API%20Reference" "$ZH_HTML_DIR/server-api-reference.html"
+# 官方 docs 站页面清单（新增页面时同步更新：doctor.sh、docs/SOURCE-AUDIT.md、docs/MAINTENANCE.md）
+# 格式：URL 路径段|本地文件名（不含扩展名）
+PAGES=(
+  "Chrome%20Plugin%20Install|chrome-plugin-install"
+  "Connect%20Data%20Sources%20and%20Knowledge%20Base|connect-data-and-knowledge-base"
+  "InfiniSynapse%20CLI%20API%20Reference|cli-api-reference"
+  "InfiniSynapse%20Existing%20Product%20Integration%20Playbook|existing-product-integration-playbook"
+  "InfiniSynapse%20Partner%20SSO%20Integration%20Guide|partner-sso-integration-guide"
+  "InfiniSynapse%20Private%20Deployment%20Guide|private-deployment-guide"
+  "InfiniSynapse%20Server%20API%20Reference|server-api-reference"
+  "InfiniSynapse%20Vibe%20Coding%20Guide|vibe-coding-guide"
+)
 
+fetch "$BASE/zh/docs" "$ZH_HTML_DIR/docs-index.html"
 fetch "$BASE/en/docs" "$HTML_DIR/docs-index.html"
-fetch "$BASE/en/docs/Chrome%20Plugin%20Install" "$HTML_DIR/chrome-plugin-install.html"
-fetch "$BASE/en/docs/InfiniSynapse%20CLI%20API%20Reference" "$HTML_DIR/cli-api-reference.html"
-fetch "$BASE/en/docs/InfiniSynapse%20Private%20Deployment%20Guide" "$HTML_DIR/private-deployment-guide.html"
-fetch "$BASE/en/docs/InfiniSynapse%20Server%20API%20Reference" "$HTML_DIR/server-api-reference.html"
+for page in "${PAGES[@]}"; do
+  slug="${page%%|*}"
+  name="${page##*|}"
+  fetch "$BASE/zh/docs/$slug" "$ZH_HTML_DIR/$name.html"
+  fetch "$BASE/en/docs/$slug" "$HTML_DIR/$name.html"
+done
 
 convert "$ZH_HTML_DIR/docs-index.html" "$ZH_MD_DIR/docs-index.md" "../../assets"
-convert "$ZH_HTML_DIR/chrome-plugin-install.html" "$ZH_MD_DIR/chrome-plugin-install.md" "../../assets"
-convert "$ZH_HTML_DIR/cli-api-reference.html" "$ZH_MD_DIR/cli-api-reference.md" "../../assets"
-convert "$ZH_HTML_DIR/private-deployment-guide.html" "$ZH_MD_DIR/private-deployment-guide.md" "../../assets"
-convert "$ZH_HTML_DIR/server-api-reference.html" "$ZH_MD_DIR/server-api-reference.md" "../../assets"
-
 convert "$HTML_DIR/docs-index.html" "$MD_DIR/docs-index.md" "../assets"
-convert "$HTML_DIR/chrome-plugin-install.html" "$MD_DIR/chrome-plugin-install.md" "../assets"
-convert "$HTML_DIR/cli-api-reference.html" "$MD_DIR/cli-api-reference.md" "../assets"
-convert "$HTML_DIR/private-deployment-guide.html" "$MD_DIR/private-deployment-guide.md" "../assets"
-convert "$HTML_DIR/server-api-reference.html" "$MD_DIR/server-api-reference.md" "../assets"
+for page in "${PAGES[@]}"; do
+  name="${page##*|}"
+  convert "$ZH_HTML_DIR/$name.html" "$ZH_MD_DIR/$name.md" "../../assets"
+  convert "$HTML_DIR/$name.html" "$MD_DIR/$name.md" "../assets"
+done
 
 for i in $(seq 1 14); do
   fetch "$BASE/chromePluginInstall/$i.png" "$ASSET_DIR/chromePluginInstall/$i.png"

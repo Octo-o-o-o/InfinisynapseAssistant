@@ -1,6 +1,6 @@
 {
   "name": "infinisynapse-ai-workspace",
-  "version": "0.3.4",
+  "version": "0.4.0",
   "description": "Skill registry for the InfiniSynapse AI rule pack.",
   "source_of_truth": ".agents/skills/",
   "platform": {
@@ -8,7 +8,7 @@
     "base_url_cn": "https://app.infinisynapse.cn",
     "base_url_com": "https://app.infinisynapse.com",
     "account_api_cn": "https://api.infinisynapse.cn/api",
-    "verified_against": "infinisynapse-site snapshot 2026-06-23"
+    "verified_against": "infinisynapse-site snapshot 2026-07-09 (8 docs pages incl. skill management, partner SSO, vibe coding guide)"
   },
   "skills": [
     {
@@ -36,7 +36,7 @@
         "设计 mini-app / SaaS 功能 / 报告生成 / 购物比价 / 高考助手",
         "需要 API 编排而不是单个 endpoint"
       ],
-      "primary_doc": "upstream-docs/infinisynapse-site/zh/markdown/server-api-reference.md#10",
+      "primary_doc": "upstream-docs/infinisynapse-site/zh/markdown/server-api-reference.md#11",
       "references": ["docs/reference/task-lifecycle.md", "samples/sdk/"]
     },
     {
@@ -89,6 +89,6 @@
   "guardrails": {
     "post_edit_hook": "tools/hooks/post-edit.sh",
     "scanner": "tools/hooks/lib/scan-infinisynapse.sh",
-    "rule_ids": ["INF-SEC-001", "INF-SEC-002", "INF-SSE-001", "INF-DL-001", "INF-ENV-001", "INF-ENV-002", "INF-ENV-003"]
+    "rule_ids": ["INF-SEC-001", "INF-SEC-002", "INF-SSE-001", "INF-DL-001", "INF-API-001", "INF-ENV-001", "INF-ENV-002", "INF-ENV-003"]
   }
 }

@@ -36,6 +36,14 @@ x-lang: zh_CN
 
 上传接口使用 `multipart/form-data`。
 
+## 桌面 / 原生 BYOK
+
+- 单用户 Electron / Tauri / 原生应用可把 main process、Tauri command 或 native layer 作为本机可信后端，持有用户自己的 InfiniSynapse API Key。
+- Key 必须放系统 Keychain / Keystore / Credential Manager 或等价安全存储，不能进 renderer、WebView、localStorage、IndexedDB 或明文配置。
+- UI 只走受控 IPC / native bridge，不暴露任意 HTTP proxy、`getApiKey()` 或可控 `Authorization` header。
+- 多租户 SaaS、团队共享 Key、企业审计和跨设备恢复场景不适用本机 BYOK，仍应使用服务端业务路由。
+- 完整边界见 `docs/playbooks/desktop-native-byok.md`。
+
 ## LLM 调用路由
 
 - 非 agentic 的一问一答、摘要、改写、翻译、分类、字段抽取、轻量评分，默认由业务后端直连 LLM。
@@ -71,6 +79,20 @@ x-lang: zh_CN
 | `/api/ai/upload?taskId=` | 响应 Agent sandbox 上传请求 |
 | `/api/tools/taskUpload/:taskId?subdir=&naming=` | 产品主动把文件归档到 workspace |
 | `/api/upload/:directory` | 通用目录上传 |
+
+## Skill 与 Partner SSO
+
+- 两类 Skill：用户级 Skill 走 `/api/ai_skill/*`（install/upload/toggleStatus），active 后 Agent 可 `use_skill` 跨任务复用；单次任务的 `SKILL.md` 方法论上下文走任务文件上传链路，不进用户 Skill 库。
+- Skill 市场发现走账号 API（`/skill/public/getSkillList` 等）。
+- 「使用 InfiniSynapse 登录」走 Partner SSO（`/api/auth/partner/*`，账号 API，`X-Client-Id`+`X-Client-Secret`）；`withApiKey:true` 可签发归属用户本人的 Partner API Key，计费记用户账上、可能签发失败要降级；`clientSecret` 与 Partner API Key 都只放服务端。
+- 端点详情见 `docs/reference/api-index.md` §5 / §8。
+
+## 测试与评估
+
+- 三层缺一不可：纯函数单测（SSE/信封）→ mock 集成测试（`samples/mock-server/`，无 Key 离线跑全链路）→ opt-in 真实冒烟（`cd samples/sdk/typescript && INFINISYNAPSE_API_KEY=sk-xxx npm run smoke:live`，会计费）。
+- 发版前用固定黄金任务集评估输出：产物断言（必需文件/schema/引用）+ 人工评分（正确性/完整性/可追溯/可用性/时延成本）。
+- 评估只看聊天文本不算数，必须断言 workspace 产物。
+- 鸿蒙 / 客户端验收补充与完整方法见 `docs/playbooks/testing-and-evaluation.md`、`docs/playbooks/harmonyos-app-integration.md`。
 
 ## RAG 与文件放置
 

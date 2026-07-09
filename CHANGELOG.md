@@ -5,13 +5,55 @@
 
 ## [Unreleased]
 
-### Added
+（暂无）
+
+## [0.4.0] - 2026-07-09
+
+上游刷新（官方 docs 站 5→8 页）+ 鸿蒙支持 + 测试评估能力 + 工程一致性修复。调研与方案见 `docs/plans/2026-07-09-upstream-refresh-and-quality.cursor.fable.md`。
+
+### Added（上游事实）
+- 上游快照新增 4 页（zh/en）：Connect Data Sources and Knowledge Base、官方 Existing Product Integration Playbook、Partner SSO Integration Guide、Vibe Coding Guide；`sync-upstream-docs.sh` 页面清单数组化，`doctor.sh`、`SOURCE-AUDIT.md` 同步。
+- `api-index.md` 新增 §5 Skill 管理（`/api/ai_skill/*` + Skill 市场）与 §8 Partner SSO（`/api/auth/partner/*`，`X-Client-Id`/`X-Client-Secret`、Partner API Key、Webhook 验签）；`newTask` 补客户端 `taskId` 幂等注记。
+- `capabilities.md` 新增 Skill 管理、Partner SSO 能力行与官方 apps 页参考；`glossary.md` 新增用户级 Skill / 任务级 Skill 上下文 / Partner SSO / Partner API Key 词条；`task-lifecycle.md` 标准时序加"准备 Skill"步骤；`rag-file-placement.md` 决策表加方法论/`SKILL.md` 放置行。
+- server-api / product-patterns / cli 三个 skill 更新：Skill 管理与两类 Skill 边界、Partner SSO 使用时机、报告快写 Skill 上下文模式、CLI 官方一键安装脚本与开源仓库（`chaozwn/infinisynapse-cli`，MIT）、`--update`/`--skill`。
+
+### Added（鸿蒙 App）
+- `docs/playbooks/harmonyos-app-integration.md`：后端代理默认架构、BYOK 例外（Asset Store Kit 存 Key）、ArkTS `requestInStream` SSE 消费参考、生命周期恢复、文件链路、Browser Use 诚实边界、质量清单。
+- 扫描器识别 `.ets`：`INF-SEC-002` 增加 ArkTS 客户端特征（`@ohos.`/`@kit.`/`@Entry`/`@Component`），新增 `bad-harmonyos-direct.ets`（exit 2）/`good-harmonyos-proxy.ets`（exit 0）fixtures；post-edit 钩子与 Cursor 规则纳入 `.ets`。
+
+### Added（测试与评估）
+- `docs/playbooks/testing-and-evaluation.md`：测试金字塔（单测 → mock 集成 → opt-in 真实冒烟 → production preflight）+ 黄金任务集评估方法（产物断言 + 人工评分维度 + 回归时机）。
+- `samples/mock-server/`：零依赖 Node 模拟器（SSE/message/workspace/preview/下载/两类上传，`[mock:upload]`/`[mock:error]` 场景），无 Key 离线跑全链路。
+- TS SDK 新增 `test/integration-mock.test.ts`（4 用例，进 `npm test`）与 `examples/live-smoke.ts`（`npm run smoke:live`，opt-in 真实计费冒烟，完成 PLAN 原第 5 条 backlog）。
+
+### Added（工程与开发者便利）
+- 本仓库启用 GitHub Actions CI（`.github/workflows/ci.yml`：doctor + npm test + skill 镜像检查）。
+- `tools/install-into.sh`：一键把 skills + AGENTS 引用块（幂等标记块）装进下游项目，并打印扫描器接线建议；test-suite 含幂等行为断言。
+
+### Changed
+- `manifest.json`：版本对齐 0.4.0、guardrails 补 `INF-API-001`、product-patterns 主文档锚点随上游重编号改为 §11、verified_against 更新为 2026-07-09。
+- TS SDK `npm run typecheck` 修为可真实通过：devDependencies 补 `@types/node`（附 lockfile）、mock server 提供 `server.d.mts` 类型声明、依赖可选 express 的 `examples/express-proxy.ts` 从类型检查排除（`npm run check` 语法检查仍覆盖）。
+- 扫描器示例（`github-action-scan.yml`、`codex-precommit.sh`）与 `.github/instructions` 的扩展名列表对齐 post-edit.sh（补 `.ets` 等）；`CONTENT-MODEL.md` 文件放置表补方法论/`SKILL.md` 行。
+- `capabilities.md` 章节引用随上游重编号修正（文件上传 §7、存储下载 §8）；`AGENTS.md`/`CLAUDE.md`/`llms.txt`/`README.md`/`.cursor/rules`/`copilot-instructions` 同步新 playbook、mock server、install-into 入口。
+- `MAINTENANCE.md`：上游同步注明 8 页与 `PAGES` 数组，影响判断表新增 Skill/Partner SSO 行与 docs 站新增页面行。
+- `docs/PLAN.md`、`docs/PROJECT-ARCHITECTURE.md` 索引刷新（补 0.3.x 后新增 playbooks 与 0.4.0 完成项）。
+- `tools/hooks/test-fixtures/README.md` 补全 `bad-wrong-success-code.ts`、`good-doc-tokens.ts` 缺失条目。
+
+### Fixed
+- 扫描器对不存在的文件路径由静默 exit 0 改为 stderr 提示 + exit 64，防止 CI wrapper 传错路径假绿；test-suite 加断言。
+- mock server CLI 入口改用 `pathToFileURL` 判断主模块，修复相对路径启动（`node samples/mock-server/server.mjs`）时进程直接退出的问题。
+- `install-into.sh` 托管块处理加固：end 标记缺失时报错退出（65）而不是截断下游 AGENTS.md；标记匹配改子串语义，标记行带尾随空格也能正确替换旧块，不再产生重复托管段。
+- `doctor.sh` 补齐 5 个漏检 playbook（llm-routing / desktop-native-byok / existing-product-integration / artifact-archiving / decision-quality-loop）；`llms.txt` skills 清单同步 Skill 管理 / Partner SSO / CLI 开源事实。
+
+### 以下为 0.3.5 之后累积、随 0.4.0 一并发布的变更
+
+#### Added
 - `docs/MAINTENANCE.md`：上游同步、影响判断、派生文档更新、发布前检查的维护手册。
 - README 增加 InfiniSynapse 官网、中文文档、国内 SaaS 控制台和海外 SaaS 链接。
 - `docs/playbooks/plan-act-approval.md`：计划/执行模式 + 高风险动作人工审批（来自 InfiJob/InfiProject 两个消费项目方案的收敛）。
 - 扫描器规则 `INF-API-001`（MEDIUM）：InfiniSynapse 集成文件里把信封成功码写成 `code===0`/`!==0` 时提示应为 `200`——反哺自两个真实消费项目都曾犯此错；含 `bad-wrong-success-code.ts` fixture。
 
-### Changed
+#### Changed
 - `docs/USAGE-GUIDE.md` 补充新项目/老项目接入流程，明确本仓库主入口是 AI 规则包 / skills，npm 仅用于验证和扫描。
 - `docs/README.md`、`AGENTS.md`、`CLAUDE.md`、`llms.txt`、`CONTRIBUTING.md` 接入维护手册。
 - `docs/playbooks/secure-integration.md` 的"服务端必须托管的状态"升级为可直接照搬的 `agent_tasks` 映射表（两个产品独立收敛）。
@@ -23,7 +65,7 @@
 - 反哺 ProjectValueLab Browser Use 安装页：补充 Chrome-only 友好提示、官方商店优先、官方可信域离线 ZIP fallback、版本/更新时间/SHA256、下载后下一步说明和浏览器验收清单。
 - 反哺 ProjectValueLab 线上 review：补充 plan/act payload 级回归审查（默认值、`togglePlanActMode`、非 approve 路径）和 Browser Use 部署后 fresh-tab 验收（新 bundle hash、鉴权路由、GET 安装入口）。
 
-### Fixed
+#### Fixed
 - TS/Python SDK multipart 上传现在和普通请求一致处理业务信封：`code !== 200`、token 失效码和 HTTP 错误都会抛 `InfiniSynapseError`，避免 HTTP 200 的上传业务错误被误当成功。
 - 扫描器 `INF-ENV-003` 收紧 `AUTHING_SERVER_URL` 路径判断：只接受裸 `/api`，`/api/`、`/apix` 或其它路径都会提示。
 - 清理 `docs/playbooks/downstream-projects.md` EOF 多余空行，保证 `git diff --check` 通过。

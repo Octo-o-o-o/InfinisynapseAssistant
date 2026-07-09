@@ -89,13 +89,20 @@ vendor/InfinisynapseAssistant/
 
 ### 2.1 具体怎么添加 skill
 
-按使用范围选择一种即可：
+最快方式：一键安装脚本（复制 skills 到目标项目的 `.agents/skills/` + `.claude/skills/`，并在目标项目 `AGENTS.md` 幂等写入引用块）：
+
+```bash
+bash tools/install-into.sh /path/to/your-app            # 安装
+bash tools/install-into.sh /path/to/your-app --dry-run  # 只看会做什么
+```
+
+手动方式按使用范围选择一种即可：
 
 | 范围 | 做法 | 适合 |
 | --- | --- | --- |
 | 只在本仓库开发 | 直接打开本仓库，使用 `.agents/skills/` | 维护规则包、写方案 |
 | 所有项目都可用 | 复制 `infinisynapse-*` 到全局 skills 目录 | 个人长期使用 |
-| 某个业务项目可用 | 复制到业务项目自己的 `.agents/skills/` | 团队项目、随仓库分发 |
+| 某个业务项目可用 | `tools/install-into.sh` 或手动复制到业务项目 `.agents/skills/` | 团队项目、随仓库分发 |
 | Claude Code | 先用 `tools/sync-skills.sh` 生成 `.claude/skills/`，再复制对应目录 | Claude Code 项目 |
 
 示例：
@@ -133,7 +140,7 @@ cp -R .claude/skills/infinisynapse-* /path/to/your-app/.claude/skills/
 bash /Users/wangyixiao/WorkSpace/InfinisynapseAssistant/tools/hooks/lib/scan-infinisynapse.sh path/to/your/file.ts
 ```
 
-不要把这些代码直接放到前端。InfiniSynapse API Key 必须只在服务端。
+不要把这些代码直接放到前端。InfiniSynapse API Key 必须只在可信后端边界；单用户桌面 / 原生 BYOK 见 `docs/playbooks/desktop-native-byok.md`。
 
 下游项目的固定规则、脚本和反哺流程见 `docs/playbooks/downstream-projects.md`。
 
@@ -145,7 +152,7 @@ bash /Users/wangyixiao/WorkSpace/InfinisynapseAssistant/tools/hooks/lib/scan-inf
 2. **先做 LLM 路由**：非 agentic 的一问一答、摘要、改写、分类、抽取、轻量评分默认直连 LLM；agentic 的深度调研、长任务、工具使用、Browser Use 和 workspace 产物默认走 InfiniSynapse。即使新项目还没有自有大模型调用层，也建议先做最小 server-side `LlmGateway`（见 `docs/playbooks/llm-routing.md`）。
 3. **选择 InfiniSynapse 能力**：先读 `docs/reference/capabilities.md`，判断需要长任务、Browser Use、RAG、数据源、市场订阅、任务分享中的哪些。
 4. **确定接入形态**：临时外部规则包、子模块/vendor、还是复制 SDK。
-5. **设计后端代理**：前端只调用自家后端；后端持有 LLM provider key 和 InfiniSynapse API Key，保存 `taskId`、`connId`、上传映射、workspace 产物路径。
+5. **设计可信后端边界**：Web / SaaS 前端只调用自家后端；单用户桌面 / 原生 BYOK 只让主进程或 native layer 持 Key。可信边界保存 `taskId`、`connId`、上传映射、workspace 产物路径。
 6. **先跑 curl spike**：用 `samples/templates/curl-quickstart.md` 验证 Key、SSE 和任务产物读取。
 7. **内化 SDK 骨架**：把 `samples/sdk/` 改造成业务后端服务，不让前端直连 InfiniSynapse。
 8. **实现最小长任务闭环**：建业务任务行 → 先连 SSE → `newTask` → 处理 `askResponse` → `completion_result` → 读取 workspace。
@@ -194,10 +201,14 @@ bash /Users/wangyixiao/WorkSpace/InfinisynapseAssistant/tools/hooks/lib/scan-inf
 | 写 SDK 或后端 route | `infinisynapse-server-api` skill + `samples/sdk/` |
 | 判断轻量调用直连 LLM 还是走 InfiniSynapse | `docs/playbooks/llm-routing.md` |
 | 安全接入 / 不泄露 API Key | `docs/playbooks/secure-integration.md` |
+| 桌面 / 原生 BYOK 接入 | `docs/playbooks/desktop-native-byok.md` |
+| 鸿蒙（HarmonyOS）app 接入 | `docs/playbooks/harmonyos-app-integration.md` |
+| 测试集成代码 / 评估 app 输出质量 | `docs/playbooks/testing-and-evaluation.md` + `samples/mock-server/` |
 | 成熟 SaaS / 老项目接入边界 | `docs/playbooks/existing-product-integration.md` |
 | 决策包质量闭环 / Outcome 回访 / Watchlist delta / benchmark | `docs/playbooks/decision-quality-loop.md` |
-| RAG 资料 / 文件放哪里 | `docs/playbooks/rag-file-placement.md` |
+| RAG 资料 / 文件放哪里（含 Skill 上下文） | `docs/playbooks/rag-file-placement.md` |
 | 订阅共享数据源 / 知识库 | `docs/playbooks/market-subscriptions.md` |
+| 「使用 InfiniSynapse 登录」/ 代用户调用 | `docs/reference/api-index.md` §8 + `infinisynapse-server-api` skill |
 | 浏览器自动化或购物比价 | `docs/playbooks/browser-use.md` + `infinisynapse-browser-extension` skill |
 | 分享 / 公开只读结果页 | `docs/playbooks/task-sharing.md` |
 | 做报告写作类产品 | `infinisynapse-product-patterns` skill |
@@ -210,7 +221,7 @@ bash /Users/wangyixiao/WorkSpace/InfinisynapseAssistant/tools/hooks/lib/scan-inf
 - 优先使用 `upstream-docs/infinisynapse-site/zh/markdown/` 下的中文 SaaS 文档，再考虑网页搜索。
 - 英文文档只作为中文文档未覆盖细节时的补充。
 - 不要猜 endpoint 名称。
-- API Key 必须保留在服务端。
+- API Key 必须保留在可信后端边界；桌面 / 原生 BYOK 不得进入 renderer 或 WebView。
 - 发送 `newTask` 前先连接 SSE。
 - 在业务数据库中保存 `taskId`、`connId`、上传映射和最终 workspace 路径。
 - 二进制下载接口不要当作 JSON envelope 处理。

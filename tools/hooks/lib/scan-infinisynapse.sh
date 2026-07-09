@@ -13,9 +13,10 @@
 #
 # 规则 ID 稳定（用于 hook / CI / fixtures）：
 #   INF-SEC-001 HIGH    硬编码 Bearer token
-#   INF-SEC-002 HIGH    前端文件直连 InfiniSynapse（API Key 会暴露）
+#   INF-SEC-002 HIGH    前端/客户端文件直连 InfiniSynapse（API Key 会暴露；含 React/Vue/Angular/浏览器特征与鸿蒙 ArkTS .ets）
 #   INF-SSE-001 MEDIUM  发 newTask 但本文件未先连 /api/ai/events
 #   INF-DL-001  MEDIUM  把下载端点当 JSON 解析
+#   INF-API-001 MEDIUM  统一信封成功码写成 code===0（应为 200）
 #   INF-ENV-001 HIGH    变量名写成 AUTH_SERVER_URL（应为 AUTHING_SERVER_URL）
 #   INF-ENV-002 HIGH    AUTHING_SERVER_URL 指向 127.0.0.1 / localhost（浏览器不可达）
 #   INF-ENV-003 MEDIUM  AUTHING_SERVER_URL 路径不是裸 /api（缺 /api 或带尾部斜杠）
@@ -29,9 +30,13 @@ case "${1:-}" in
 esac
 
 FILE="${1:-}"
-if [[ -z "$FILE" || ! -f "$FILE" ]]; then
+if [[ -z "$FILE" ]]; then
   echo "usage: scan-infinisynapse.sh [--json|--stats] <file>" >&2
-  exit 0
+  exit 64
+fi
+if [[ ! -f "$FILE" ]]; then
+  echo "scan-infinisynapse.sh: file not found: $FILE" >&2
+  exit 64
 fi
 
 # findings：每条 "RULE\tSEV\tLINE\tMESSAGE"
@@ -153,7 +158,7 @@ done < <(grep -nE 'AUTHING_SERVER_URL[[:space:]]*[:=]' "$FILE" 2>/dev/null || tr
 
 # ---------------- 代码规则（按扩展名）----------------
 case "$base" in
-  *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs|*.py|*.go|*.java|*.kt|*.rb|*.php)
+  *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs|*.ets|*.py|*.go|*.java|*.kt|*.rb|*.php)
     # 代码段：把块注释刷白后再扫，避免块注释里的 token/endpoint 误判
     SCRUBBED="$(mktemp 2>/dev/null || echo "/tmp/inf-scrub-$$")"
     if scrub_block_comments "$ORIG_FILE" > "$SCRUBBED" 2>/dev/null; then FILE="$SCRUBBED"; fi
@@ -170,11 +175,23 @@ case "$base" in
       add_finding "INF-SEC-001" "HIGH" "$ln" "硬编码 Bearer token；API Key 必须来自服务端环境变量/密钥管理"
     done < <(grep -nE 'Bearer [A-Za-z0-9][A-Za-z0-9._-]{15,}' "$FILE" 2>/dev/null || true)
 
-    # INF-SEC-002：前端文件直连 InfiniSynapse（API Key 暴露风险）
+    # INF-SEC-002：前端/客户端文件直连 InfiniSynapse（API Key 暴露风险）
+    # 前端特征：React/Vue/Angular/浏览器全局；客户端特征：鸿蒙 ArkTS。
+    # 注意：@Entry/@Component 装饰器只在 .ets 内算 ArkTS 特征——Java/Kotlin Spring 后端的 @Component 是合法后端代理，不能误伤。
     if code_has 'app\.infinisynapse\.(cn|com)|/api/ai/(events|message)'; then
-      if code_has "from[[:space:]]+['\"]react['\"]|from[[:space:]]+['\"]vue['\"]|useState\(|window\.|document\."; then
+      client_hit=0
+      if code_has "from[[:space:]]+['\"]react['\"]|from[[:space:]]+['\"]vue['\"]|from[[:space:]]+['\"]@angular/|useState\(|window\.|document\."; then
+        client_hit=1
+      fi
+      if code_has "@ohos\.|@kit\."; then
+        client_hit=1
+      fi
+      if [[ "$base" == *.ets ]] && code_has "@Entry([^A-Za-z]|$)|@Component([^A-Za-z]|$)"; then
+        client_hit=1
+      fi
+      if [[ "$client_hit" -eq 1 ]]; then
         ln="$(first_line 'app\.infinisynapse\.(cn|com)|/api/ai/(events|message)')"
-        add_finding "INF-SEC-002" "HIGH" "$ln" "前端文件直连 InfiniSynapse：API Key 会进 bundle。改用后端代理路由"
+        add_finding "INF-SEC-002" "HIGH" "$ln" "前端/客户端文件直连 InfiniSynapse：API Key 会进 bundle/安装包。改用后端代理路由"
       fi
     fi
 

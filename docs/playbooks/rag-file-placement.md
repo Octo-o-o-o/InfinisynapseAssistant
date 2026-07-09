@@ -14,6 +14,7 @@
 | Agent 执行中要求补文件 | 当前任务 sandbox | `POST /api/ai/upload?taskId=`，随后用 `askResponse` 继续 | 只在 SSE 中收到文件请求时使用。 |
 | 长期 RAG 知识库 | InfiniSynapse 可访问的 RAG `docDir`，或 OSS/S3/file 后端 | `/api/ai_rag_sdk/create`, `/api/ai_rag_sdk/enabled`, `/api/ai_rag_sdk/fileTree` | 适合可复用知识库、公司资料、长期产品文档。 |
 | 结构化表格或数据库文件 | 任务 workspace 临时分析，或数据源/数据库 | `/api/tools/taskUpload/:taskId`, `/api/ai_database/upload/:databaseId` | 取决于是否需要长期复用和结构化查询。 |
+| 方法论 / `SKILL.md` / 写作规范模板 | 单次任务：目录树写进 prompt + 文件走 sandbox 链路；长期复用：安装为用户级 Skill | 单次走 `upload_file_to_sandbox` 响应链路；长期用 `/api/ai_skill/upload`（zip 内任意层级含 `SKILL.md`）或 `/api/ai_skill/install` | 两类 Skill 别混：任务级上下文只影响本次任务；用户级 Skill active 后 Agent 可跨任务 `use_skill`。见 api-index §5 与上游 server-api §6.4。 |
 | 任务生成的报告、图表、附件 | 当前任务 workspace；成熟产品再归档到自有 artifact store | `getTaskWorkspace`, `previewFile`, `downloadTaskFile`, `downloadZip` | 完成后不要只读最后一条文本，要枚举 workspace。需要产品历史、下载 SLA 或合规审计时，保存 provider path + 自有 storage key；完整标准见 [artifact-archiving.md](artifact-archiving.md)。 |
 
 ## SaaS 版本的边界

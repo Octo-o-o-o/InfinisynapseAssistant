@@ -5,6 +5,7 @@ globs:
   - "**/*.tsx"
   - "**/*.js"
   - "**/*.py"
+  - "**/*.ets"
   - "**/*.md"
 alwaysApply: false
 ---
@@ -13,11 +14,12 @@ alwaysApply: false
 
 - Read `AGENTS.md` first; locate endpoints in `docs/reference/api-index.md` and the SSE flow in `docs/reference/task-lifecycle.md`.
 - Search `upstream-docs/infinisynapse-site/zh/markdown/` before using an endpoint; English docs are supplemental only. Do not invent endpoints.
-- Keep API Key server-side; never put it in frontend/mobile bundles. Default to a backend proxy route.
+- Keep API Key server-side; never put it in frontend/mobile/HarmonyOS bundles. Default to a backend proxy route. HarmonyOS apps follow `docs/playbooks/harmonyos-app-integration.md`.
 - Route AI calls by workload: non-agentic Q&A, summaries, rewrites, classification, extraction, and lightweight scoring should use a server-side LLM gateway; agentic long tasks, Browser Use, tool-heavy research, and workspace artifacts should use InfiniSynapse.
 - Connect `GET /api/ai/events?connId=` before `POST /api/ai/message` (newTask).
 - Use workspace APIs for deliverables: `getTaskWorkspace`, `previewFile`, `downloadTaskFile`.
 - Download endpoints return binary streams — do not parse them as `{code,message,data}` JSON.
 - Two upload kinds differ: `/api/ai/upload` (respond to Agent) vs `/api/tools/taskUpload` (proactively archive).
+- User-level Skills install via `/api/ai_skill/*` (reusable via `use_skill`); per-task `SKILL.md` context goes through the task file upload flow instead. Partner SSO endpoints live on the account API (`/api/auth/partner/*`).
 - For private deployment, check `AUTHING_SERVER_URL` first (var name, browser-reachable, bare `/api`, no trailing slash).
-- Copyable reference clients live in `samples/sdk/`.
+- Copyable reference clients live in `samples/sdk/`; offline integration tests use `samples/mock-server/`; testing/evaluation methodology in `docs/playbooks/testing-and-evaluation.md`.

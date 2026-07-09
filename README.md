@@ -2,7 +2,7 @@
 
 面向 Codex / Claude Code / Cursor / GitHub Copilot 等 AI 编码助手的 InfiniSynapse 规范助手工作区。
 
-这个仓库不是 InfiniSynapse 本体，也不是业务应用模板。它的作用是把 InfiniSynapse 当前公开的中文 SaaS/API 文档、私有化部署文档、CLI API、Chrome Browser Use 插件文档，以及面向产品开发的调用模式沉淀成一套本地 AI 规则包。后续开发基于 InfiniSynapse 的应用时，让 AI 先读这个仓库，可以显著减少“重新翻文档”“凭训练数据猜接口”“把 API Key 写进前端”“SSE 顺序写错”等问题。
+这个仓库不是 InfiniSynapse 本体，也不是业务应用模板。它的作用是把 InfiniSynapse 当前公开的中文 SaaS/API 文档（含 Skill 管理、Partner SSO、官方集成 playbook、Vibe Coding 指南共 8 页）、私有化部署文档、CLI API、Chrome Browser Use 插件文档，以及面向产品开发的调用模式沉淀成一套本地 AI 规则包。后续开发基于 InfiniSynapse 的应用（Web、后端、桌面、鸿蒙 app）时，让 AI 先读这个仓库，可以显著减少“重新翻文档”“凭训练数据猜接口”“把 API Key 写进前端”“SSE 顺序写错”等问题。
 
 ## 官方链接
 
@@ -35,7 +35,7 @@ InfiniSynapse 目前在公开训练语料里覆盖较少，AI 助手很容易在
 | 回报 | 对人类开发者 | 对 AI 助手 |
 | --- | --- | --- |
 | 降低接口幻觉 | 用 `docs/reference/api-index.md` 和 `upstream-docs/` 快速核对 endpoint、method、body 和产物接口 | 先读 `AGENTS.md`、skill、reference，再写代码；没有文档依据时不要编造接口 |
-| 降低安全事故 | 默认服务端代理，API Key 不进浏览器、移动端、截图或公开仓库 | 扫描器识别硬编码 Bearer token、前端直连 InfiniSynapse、错误 `AUTHING_SERVER_URL` |
+| 降低安全事故 | 默认服务端代理；单用户桌面 / 原生 BYOK 由主进程或 native layer 持 Key；API Key 不进浏览器、WebView、截图或公开仓库 | 扫描器识别硬编码 Bearer token、前端直连 InfiniSynapse、错误 `AUTHING_SERVER_URL` |
 | 降低长任务失败率 | 按标准链路实现 `events -> newTask -> askResponse -> workspace`，避免只读 SSE 文本 | 生成代码时必须先连 SSE，再发 `newTask`，完成后读取 `getTaskWorkspace` / `previewFile` / `downloadTaskFile` |
 | 缩短接入时间 | 直接内化 `samples/sdk/`、`curl-quickstart`、`server-side-agent-flow` 到业务后端 | 复用现有 SDK、模板和 playbook，不从零手写 SSE、上传、下载和代理逻辑 |
 | 支撑成熟产品接入 | 老项目可以按灰度、恢复、取消、runtime guard、人工审批、产物归档逐步接入 | 先判断轻量 LLM 直连还是 InfiniSynapse 长任务，不替换已有用户、权限、计费、队列等核心系统 |
@@ -50,7 +50,7 @@ AI 读取提示：本节用于判断项目价值和使用边界，不替代 API 
 
 - **有明确入口**：`AGENTS.md`、`CLAUDE.md`、`llms.txt` 告诉 AI 先读什么、按什么优先级读，避免每次从一堆 Markdown 里自行猜上下文。
 - **有任务分流**：`.agents/skills/` 把部署、Server API、CLI、产品模式、浏览器插件拆成独立 skill，AI 会按任务读取更小、更相关的规则。
-- **有强约束规则**：把“API Key 必须在服务端”“先连 SSE 再发任务”“结果要读 workspace”“`AUTHING_SERVER_URL` 不能写错”等高风险点从文档描述提升为默认开发约束。
+- **有强约束规则**：把“API Key 必须在可信后端边界”“先连 SSE 再发任务”“结果要读 workspace”“`AUTHING_SERVER_URL` 不能写错”等高风险点从文档描述提升为默认开发约束。
 - **有产品编排模式**：不仅保存 endpoint，还整理了高考助手、购物比价、报告快写等应用级调用流程，方便从“单接口调用”推进到“可落地产品设计”。
 - **有可跑的参考 SDK**：`samples/sdk/` 提供零依赖的 TypeScript / Python 客户端（SSE 解析、`runTask` 长任务编排、后端代理、二进制下载、两类上传），并带离线单测，AI 可以直接复制而不必现写易错的 SSE/代理。
 - **有实时护栏**：`tools/hooks/` 的扫描器在每次 Edit/Write 后自动检查「API Key 进前端、SSE 顺序、二进制当 JSON、`AUTHING_SERVER_URL` 写错」等风险点；命中高危（`INF-SEC-*`/`INF-ENV-001/002`）会阻塞要求当场修，`INF-SSE-001`/`INF-DL-001` 等为提醒。
@@ -91,21 +91,24 @@ AI 读取提示：本节用于判断项目价值和使用边界，不替代 API 
 │   ├── CONTENT-MODEL.md              # AI/人类友好 × 官方/特定用法的内容维护模型
 │   ├── MAINTENANCE.md                # 上游同步、派生文档更新与发布前检查
 │   ├── reference/                    # 事实基准：api-index / capabilities / task-lifecycle / glossary
-│   ├── playbooks/                    # 特定用法：LLM 路由 / 安全接入 / 成熟产品接入 / RAG / 市场订阅 / Browser Use / 任务分享 / 排查（+ assets/ 图）
+│   ├── playbooks/                    # 特定用法：LLM 路由 / 安全接入 / 桌面 BYOK / 鸿蒙 app / 成熟产品接入 / RAG / 市场订阅 / Browser Use / 任务分享 / 测试与评估 / 排查（+ assets/ 图）
 │   ├── proposals/                    # 产品方案草案（外围，不进规则主线）
+│   ├── plans/                        # 阶段性调研与实施方案工作稿
 │   └── ...                           # 使用说明、架构、审计、计划、速查、许可说明
 ├── samples/
-│   ├── sdk/typescript/               # 零依赖 TS client + SSE 解析 + 重连 runTask + 代理 + 离线单测
+│   ├── sdk/typescript/               # 零依赖 TS client + SSE 解析 + 重连 runTask + 代理 + 离线单测 + mock 集成测试 + 真实冒烟
 │   ├── sdk/python/                   # 标准库 Python client + 重连 + 离线单测
+│   ├── mock-server/                  # 零依赖模拟器：无 Key 离线跑通 SSE→newTask→产物
 │   └── templates/                    # curl 速查、后端 Agent Flow 骨架
 ├── tools/
-│   ├── hooks/                        # PostToolUse 扫描器 + fixtures + 复用示例
+│   ├── hooks/                        # PostToolUse 扫描器 + fixtures（含鸿蒙 .ets）+ 复用示例
 │   ├── sync-skills.sh                # .agents/skills → .claude/skills 镜像
+│   ├── install-into.sh               # 一键把 skills + 规则入口装进下游项目
 │   ├── doctor.sh / test-suite.sh / sync-upstream-docs.sh
 ├── .agents/skills/                   # skills 唯一源（Codex）+ manifest.json
 ├── .claude/                          # settings.json 接线 PostToolUse 钩子 + skills/ 镜像
-├── .cursor/rules/  .github/          # Cursor / Copilot fan-out
-├── upstream-docs/infinisynapse-site/ # 官方文档本地镜像
+├── .cursor/rules/  .github/          # Cursor / Copilot fan-out + workflows/ci.yml（doctor + npm test）
+├── upstream-docs/infinisynapse-site/ # 官方文档本地镜像（8 页 zh/en + 截图）
 └── upstream-src/                     # 预留上游源码 / 离线包位置
 ```
 
@@ -136,11 +139,13 @@ AI 读取提示：本节用于判断项目价值和使用边界，不替代 API 
 
 | Skill | 触发场景 | 必读文档 |
 | --- | --- | --- |
-| `infinisynapse-server-api` | 写 SDK、后端 route、SSE、任务、数据源、RAG、上传下载 | `zh/markdown/server-api-reference.md` |
-| `infinisynapse-product-patterns` | 设计高考助手、购物比价、报告快写、LLM 路由等任务型产品 | Server API 第 10 节 |
+| `infinisynapse-server-api` | 写 SDK、后端 route、SSE、任务、数据源、RAG、Skill 管理、Partner SSO、上传下载 | `zh/markdown/server-api-reference.md`、`zh/markdown/partner-sso-integration-guide.md` |
+| `infinisynapse-product-patterns` | 设计高考助手、购物比价、报告快写、LLM 路由等任务型产品 | Server API 第 11 节 |
 | `infinisynapse-deployment` | 私有化部署、`.env`、Docker Compose、登录失败、OOM | `zh/markdown/private-deployment-guide.md` |
-| `infinisynapse-cli` | `agent_infini` CLI、CLI 请求映射、二次集成 | `zh/markdown/cli-api-reference.md` |
+| `infinisynapse-cli` | `agent_infini` CLI、一键安装、CLI 请求映射、二次集成 | `zh/markdown/cli-api-reference.md` |
 | `infinisynapse-browser-extension` | Browser Use、Chrome 插件、网页自动化、购物/网页研究 | `zh/markdown/chrome-plugin-install.md` |
+
+鸿蒙 app 集成与「测试/评估你做的 app」没有独立 skill，入口分别是 `docs/playbooks/harmonyos-app-integration.md` 和 `docs/playbooks/testing-and-evaluation.md`。
 
 ## 快速开始
 
@@ -148,23 +153,29 @@ AI 读取提示：本节用于判断项目价值和使用边界，不替代 API 
 # 体检当前规则包、上游快照、SDK、钩子和镜像一致性
 bash tools/doctor.sh
 
-# 跑回归：扫描器 fixtures + SDK 离线单测 + skill 镜像一致 + 文档对齐
+# 跑回归：扫描器 fixtures + SDK 离线单测 + mock 集成测试 + skill 镜像一致 + 文档对齐
 npm test
 
-# 手动扫描某个文件的 InfiniSynapse 反模式
+# 手动扫描某个文件的 InfiniSynapse 反模式（支持 .ts/.py/.ets 等）
 npm run scan -- path/to/file.ts
+
+# 一键把 skills + 规则入口装进下游业务项目
+bash tools/install-into.sh /path/to/your-app
 
 # 改了 skill 后把唯一源镜像到 Claude
 bash tools/sync-skills.sh
 
-# 同步最新公开文档，包含 zh/en 两套和截图资源
+# 同步最新公开文档（8 页 zh/en + 截图）
 bash tools/sync-upstream-docs.sh
+
+# 拿到真实 Key 后的端到端冒烟（opt-in，会产生真实计费）
+cd samples/sdk/typescript && INFINISYNAPSE_API_KEY=sk-xxx npm run smoke:live
 ```
 
-当前验证状态：
+当前验证状态（2026-07-09）：
 
 ```text
-npm test: PASS（65 项，0 失败）
+npm test: PASS（80 项，0 失败；含 mock server 全链路集成测试）
 bash tools/doctor.sh: PASS，仅 upstream-src/infini_docker 缺失、GitHub source repository currently unreachable 为预期 WARN
 ```
 
@@ -237,6 +248,8 @@ Frontend / Mini App
 ```
 
 默认按工作负载分流：一问一答、摘要、改写、分类、抽取、轻量评分等非 agentic 调用走后端直连 LLM；深度调研、长任务、工具使用、Browser Use 和报告/PDF/表格等 workspace 产物走 InfiniSynapse。不要让前端直接持有 LLM provider key 或 InfiniSynapse API Key。
+
+单用户桌面 / 原生 BYOK 可以把 Electron main process、Tauri command 或 native layer 作为本机可信后端；renderer / WebView 仍然不能持 Key 或直连 InfiniSynapse。详见 `docs/playbooks/desktop-native-byok.md`。
 
 服务端至少保存：
 
@@ -322,10 +335,11 @@ git clone https://github.com/chaozwn/infini_docker.git upstream-src/infini_docke
 
 ## 当前限制
 
-- SDK 是**参考实现**，不连真实 API；离线只能验证 SSE 解析、语法和调用契约，端到端要自己拿 Key 跑。
-- 还没有基于真实私有化部署 / 真实 Key 的 contract tests。
+- SDK 是**参考实现**；离线可验证 SSE 解析、调用契约和 mock 全链路集成，端到端用 `npm run smoke:live` 自带 Key 跑（会计费）。
+- mock server 只模拟已文档化的行为子集，不是官方模拟器；还没有基于真实私有化部署的 contract tests。
 - 扫描器是 grep 级启发式：高精度但非语义分析，跨文件的 SSE 顺序（A 文件连 SSE、B 文件发任务）不会判为违规。
-- `upstream-src/infini_docker/` 尚未补齐，因为官方 GitHub 仓库当前返回 404。
+- 鸿蒙 playbook 中的 ArkTS 片段是参考实现，需在 DevEco Studio 工程中编译验证（本仓库无法编译 ArkTS）。
+- `upstream-src/infini_docker/` 尚未补齐，因为官方 GitHub 仓库当前返回 404（CLI 仓库 `infinisynapse-cli` 已开源可用）。
 
 ## 许可证
 

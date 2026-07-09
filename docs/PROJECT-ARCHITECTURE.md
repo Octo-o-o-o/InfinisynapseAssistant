@@ -8,15 +8,15 @@
 | --- | --- | --- |
 | 入口规则 | `AGENTS.md`, `CLAUDE.md`, `llms.txt` | AI 启动后优先读取的导航和通用约束 |
 | 规范参考 | `docs/reference/`（api-index, capabilities, task-lifecycle, glossary） | 从上游提炼的端点/能力/SSE 时序/术语，事实基准 |
-| 特定用法 playbooks | `docs/playbooks/` | 跨章节组合的核心场景做法：安全接入、成熟产品接入、RAG/文件、市场订阅、Browser Use、任务分享、排查 |
+| 特定用法 playbooks | `docs/playbooks/` | 跨章节组合的核心场景做法：LLM 路由、安全接入、桌面/原生 BYOK、鸿蒙 app、成熟产品接入、RAG/文件、市场订阅、Browser Use、任务分享、计划/执行审批、产物归档、决策质量闭环、测试与评估、下游项目反哺、排查 |
 | 任务 skills | `.agents/skills/`（唯一源）, `.claude/skills/`（镜像） | 按部署、Server API、CLI、产品模式、浏览器插件分流 |
-| 可跑参考 | `samples/sdk/`, `samples/templates/` | TS/Python 零依赖 client、runTask、代理、curl 速查 |
-| 实时护栏 | `tools/hooks/` | PostToolUse 扫描器 + fixtures，拦截高风险反模式 |
-| 工具适配 | `.cursor/rules/`, `.github/` | Cursor 和 GitHub Copilot 可读取的规则（fan-out） |
-| 上游文档 | `upstream-docs/` | 官方公开文档和截图的本地快照 |
+| 可跑参考 | `samples/sdk/`, `samples/mock-server/`, `samples/templates/` | TS/Python 零依赖 client、runTask、代理、mock 模拟器、真实冒烟、curl 速查 |
+| 实时护栏 | `tools/hooks/` | PostToolUse 扫描器 + fixtures，拦截高风险反模式（含鸿蒙 `.ets`） |
+| 工具适配 | `.cursor/rules/`, `.github/` | Cursor 和 GitHub Copilot 可读取的规则（fan-out）；`.github/workflows/ci.yml` 跑本仓库回归 |
+| 上游文档 | `upstream-docs/` | 官方公开文档（8 页 zh/en）和截图的本地快照 |
 | 上游源码 | `upstream-src/` | 预留 `infini_docker` 源码或离线包位置 |
-| 项目文档 | `docs/` | 使用说明、来源审计、速查、许可说明、后续计划 |
-| 脚本 | `tools/` | 文档/技能同步、项目体检、回归测试 |
+| 项目文档 | `docs/` | 使用说明、来源审计、速查、许可说明、后续计划；`docs/plans/` 存放阶段性方案工作稿 |
+| 脚本 | `tools/` | 文档/技能同步、项目体检、回归测试、下游安装（`install-into.sh`） |
 
 ## 设计原则
 
