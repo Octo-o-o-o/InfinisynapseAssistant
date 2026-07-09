@@ -104,6 +104,7 @@ GET /api/ai_task/getTaskWorkspace/:taskId       # 重新枚举产物
 
 - **SSE 重连**：连接断开要带同一 `connId` 重连；重连后用 `getUiMessageById` 补齐错过的消息。
 - **SSE 建连超时、流不限时**：`GET /api/ai/events` 的建连（响应头返回前）要设超时（如 30s，与普通 REST 一致），否则握手挂死会永久占用 consumer；建连成功后**不要**给流本身设总超时——长任务事件流可持续数小时，流的生命周期交给调用方的 AbortSignal + idle 超时判定（见"心跳"条）。
+- **"先 SSE 后 newTask"收敛为单点 launcher**：业务后端若有多条任务提交路径（主任务、复核子任务、深研 child task……），不要在每条路径手写时序——封装一个 launcher 模板（openEvents → 注册 consumer → 记录已连接 → createTask → 记录已提交 → 后台消费；任一步失败则 abort + 注销 consumer + 原样抛错，失败后的业务补偿留在调用方），铁律只在这一个函数里强制。配一个 mock client 按调用顺序断言的测试（如 `["openEvents","createTask"]` 序列断言），任何新增提交路径改动都无法绕过时序检查。
 - **阶段切换后继续消费**：plan 阶段为了进入人工审批可能会停止当前 consumer；approve 后、发送 act prompt 前要重新建立/确认 SSE consumer。
 - **首事件超时**：连上 SSE 后等 `state.ready` 设 2~3s 超时兜底，超时也继续发 `newTask`（文档允许）。
 - **心跳**：`heartbeat` 仅保活；长时间无任何事件（含心跳）才判定连接死亡。
