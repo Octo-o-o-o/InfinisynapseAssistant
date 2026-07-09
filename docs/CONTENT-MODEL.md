@@ -41,6 +41,7 @@
 | Agent 在执行中主动要求补文件 | 当前任务 sandbox | `POST /api/ai/upload?taskId=`，随后 `POST /api/ai/message` 回 `askResponse` |
 | 长期 RAG 知识库资料 | InfiniSynapse 可访问的 RAG `docDir`，或 OSS/S3/file 后端 | `/api/ai_rag_sdk/create`, `/api/ai_rag_sdk/enabled`, `/api/ai_rag_sdk/fileTree` |
 | 结构化数据或表格资料 | 任务工作区临时分析，或作为数据源/数据库文件 | `/api/tools/taskUpload/:taskId`, `/api/ai_database/upload/:databaseId` |
+| 方法论 / `SKILL.md` / 写作规范 | 单次任务走任务文件上传链路；长期复用装用户级 Skill | 单次响应 `upload_file_to_sandbox`；长期 `/api/ai_skill/upload` 或 `/api/ai_skill/install` |
 | 任务生成的最终产物 | 任务工作区 | `getTaskWorkspace`, `previewFile`, `downloadTaskFile`, `downloadZip` |
 
 SaaS 版本下，`docDir: "/path/to/docs"` 不能理解为开发者本机路径。InfiniSynapse SaaS 无法读取你的本地 `/Users/...` 目录。长期 RAG 文件必须位于 InfiniSynapse 服务端可访问的位置，通常是平台可访问的文件系统、OSS/S3，或已经订阅/创建好的知识库资源。

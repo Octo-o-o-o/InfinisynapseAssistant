@@ -13,7 +13,7 @@
 #
 # 规则 ID 稳定（用于 hook / CI / fixtures）：
 #   INF-SEC-001 HIGH    硬编码 Bearer token
-#   INF-SEC-002 HIGH    前端/客户端文件直连 InfiniSynapse（API Key 会暴露；含 React/Vue/浏览器特征与鸿蒙 ArkTS .ets）
+#   INF-SEC-002 HIGH    前端/客户端文件直连 InfiniSynapse（API Key 会暴露；含 React/Vue/Angular/浏览器特征与鸿蒙 ArkTS .ets）
 #   INF-SSE-001 MEDIUM  发 newTask 但本文件未先连 /api/ai/events
 #   INF-DL-001  MEDIUM  把下载端点当 JSON 解析
 #   INF-API-001 MEDIUM  统一信封成功码写成 code===0（应为 200）

@@ -32,6 +32,8 @@
 
 ### Changed
 - `manifest.json`：版本对齐 0.4.0、guardrails 补 `INF-API-001`、product-patterns 主文档锚点随上游重编号改为 §11、verified_against 更新为 2026-07-09。
+- TS SDK `npm run typecheck` 修为可真实通过：devDependencies 补 `@types/node`（附 lockfile）、mock server 提供 `server.d.mts` 类型声明、依赖可选 express 的 `examples/express-proxy.ts` 从类型检查排除（`npm run check` 语法检查仍覆盖）。
+- 扫描器示例（`github-action-scan.yml`、`codex-precommit.sh`）与 `.github/instructions` 的扩展名列表对齐 post-edit.sh（补 `.ets` 等）；`CONTENT-MODEL.md` 文件放置表补方法论/`SKILL.md` 行。
 - `capabilities.md` 章节引用随上游重编号修正（文件上传 §7、存储下载 §8）；`AGENTS.md`/`CLAUDE.md`/`llms.txt`/`README.md`/`.cursor/rules`/`copilot-instructions` 同步新 playbook、mock server、install-into 入口。
 - `MAINTENANCE.md`：上游同步注明 8 页与 `PAGES` 数组，影响判断表新增 Skill/Partner SSO 行与 docs 站新增页面行。
 - `docs/PLAN.md`、`docs/PROJECT-ARCHITECTURE.md` 索引刷新（补 0.3.x 后新增 playbooks 与 0.4.0 完成项）。
@@ -42,13 +44,13 @@
 
 ### 以下为 0.3.5 之后累积、随 0.4.0 一并发布的变更
 
-### Added
+#### Added
 - `docs/MAINTENANCE.md`：上游同步、影响判断、派生文档更新、发布前检查的维护手册。
 - README 增加 InfiniSynapse 官网、中文文档、国内 SaaS 控制台和海外 SaaS 链接。
 - `docs/playbooks/plan-act-approval.md`：计划/执行模式 + 高风险动作人工审批（来自 InfiJob/InfiProject 两个消费项目方案的收敛）。
 - 扫描器规则 `INF-API-001`（MEDIUM）：InfiniSynapse 集成文件里把信封成功码写成 `code===0`/`!==0` 时提示应为 `200`——反哺自两个真实消费项目都曾犯此错；含 `bad-wrong-success-code.ts` fixture。
 
-### Changed
+#### Changed
 - `docs/USAGE-GUIDE.md` 补充新项目/老项目接入流程，明确本仓库主入口是 AI 规则包 / skills，npm 仅用于验证和扫描。
 - `docs/README.md`、`AGENTS.md`、`CLAUDE.md`、`llms.txt`、`CONTRIBUTING.md` 接入维护手册。
 - `docs/playbooks/secure-integration.md` 的"服务端必须托管的状态"升级为可直接照搬的 `agent_tasks` 映射表（两个产品独立收敛）。
@@ -60,7 +62,7 @@
 - 反哺 ProjectValueLab Browser Use 安装页：补充 Chrome-only 友好提示、官方商店优先、官方可信域离线 ZIP fallback、版本/更新时间/SHA256、下载后下一步说明和浏览器验收清单。
 - 反哺 ProjectValueLab 线上 review：补充 plan/act payload 级回归审查（默认值、`togglePlanActMode`、非 approve 路径）和 Browser Use 部署后 fresh-tab 验收（新 bundle hash、鉴权路由、GET 安装入口）。
 
-### Fixed
+#### Fixed
 - TS/Python SDK multipart 上传现在和普通请求一致处理业务信封：`code !== 200`、token 失效码和 HTTP 错误都会抛 `InfiniSynapseError`，避免 HTTP 200 的上传业务错误被误当成功。
 - 扫描器 `INF-ENV-003` 收紧 `AUTHING_SERVER_URL` 路径判断：只接受裸 `/api`，`/api/`、`/apix` 或其它路径都会提示。
 - 清理 `docs/playbooks/downstream-projects.md` EOF 多余空行，保证 `git diff --check` 通过。

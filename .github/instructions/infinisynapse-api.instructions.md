@@ -1,5 +1,5 @@
 ---
-applyTo: "**/*.{ts,tsx,js,py,md}"
+applyTo: "**/*.{ts,tsx,js,py,ets,md}"
 ---
 
 # InfiniSynapse API Instructions

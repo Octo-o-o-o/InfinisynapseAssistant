@@ -12,8 +12,9 @@ SCANNER="$ROOT/tools/hooks/lib/scan-infinisynapse.sh"
 worst=0
 while IFS= read -r f; do
   [[ -z "$f" ]] && continue
+  # 扩展名列表与 tools/hooks/post-edit.sh 保持一致
   case "$f" in
-    *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs|*.py|*.go|*.java|*.kt|*.rb|*.php|.env|.env.*|*.env|*.yml|*.yaml|*compose*) ;;
+    *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs|*.ets|*.py|*.go|*.java|*.kt|*.rb|*.php|.env|.env.*|*.env|*.yml|*.yaml|*compose*|*.tf|*.toml) ;;
     *) continue;;
   esac
   [[ -f "$ROOT/$f" ]] || continue

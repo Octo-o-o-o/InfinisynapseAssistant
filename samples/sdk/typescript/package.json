@@ -13,12 +13,19 @@
     "typecheck": "tsc --noEmit",
     "smoke:live": "node --experimental-strip-types examples/live-smoke.ts"
   },
-  "keywords": ["infinisynapse", "sse", "agent", "sdk", "server-api"],
+  "keywords": [
+    "infinisynapse",
+    "sse",
+    "agent",
+    "sdk",
+    "server-api"
+  ],
   "engines": {
     "node": ">=22.6"
   },
   "license": "UNLICENSED",
   "devDependencies": {
+    "@types/node": "^26.1.1",
     "typescript": "^5.5.0"
   },
   "peerDependenciesMeta": {
