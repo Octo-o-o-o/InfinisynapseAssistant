@@ -35,7 +35,7 @@
    git status -sb
    ```
 
-2. 同步官方公开文档：
+2. 同步官方公开文档（当前共 8 页 zh/en，清单维护在脚本内 `PAGES` 数组；官方新增页面时先更新该数组和 `tools/doctor.sh`）：
 
    ```bash
    bash tools/sync-upstream-docs.sh
@@ -69,6 +69,8 @@
 | 下载/上传返回类型变化 | `api-index.md` 二进制清单 | 扫描器 `INF-DL-*`、SDK、curl 模板 |
 | API Key / 鉴权 / 控制台路径变化 | `README.md`、`QUICK-REFERENCE.md`、`secure-integration.md` | `AGENTS.md`、`CLAUDE.md`、扫描器 |
 | RAG / 数据源 / 市场订阅变化 | `api-index.md`、`capabilities.md` | `rag-file-placement.md`、`market-subscriptions.md`、SDK |
+| Skill 管理 / Partner SSO 变化 | `api-index.md`、`capabilities.md`、`glossary.md` | `rag-file-placement.md`（Skill 上下文行）、server-api skill、`secure-integration.md` |
+| 官方 docs 站新增/删除页面 | `tools/sync-upstream-docs.sh` 的 `PAGES`、`tools/doctor.sh`、`SOURCE-AUDIT.md` | `MAINTENANCE.md` 本表、README |
 | Browser Use 安装或 session 字段变化 | `browser-use.md` | browser-extension skill、assets、README |
 | 私有化部署变量、端口、资源要求变化 | `QUICK-REFERENCE.md`、`troubleshooting.md` | deployment skill、扫描器 `INF-ENV-*`、doctor |
 | 新能力或新产品组合模式 | `capabilities.md` | 新 playbook 或 product-pattern skill |

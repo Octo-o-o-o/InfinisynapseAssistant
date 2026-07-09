@@ -25,6 +25,7 @@ Renderer / WebView / UI
 | 单用户桌面应用，用户手动填自己的 InfiniSynapse Key | 适用 | Key 存系统密钥链，主进程托管请求 |
 | Electron / Tauri 应用，本地 renderer 只是 UI | 适用 | renderer 只走受控 IPC，不直连 InfiniSynapse |
 | 原生 iOS / Android 应用，Key 存 Keychain / Keystore | 有条件适用 | WebView 或 JS runtime 不得读取 Key |
+| 鸿蒙（HarmonyOS）应用，Key 存 Asset Store Kit | 有条件适用 | 同上；架构与 SSE 细节见 `harmonyos-app-integration.md` |
 | 多租户 Web SaaS，平台替用户统一调用 | 不适用 | 必须走服务端业务路由 |
 | 企业统一 Key、计费、审计、权限隔离 | 不适用 | Key 和 SSE consumer 应在企业后端 |
 

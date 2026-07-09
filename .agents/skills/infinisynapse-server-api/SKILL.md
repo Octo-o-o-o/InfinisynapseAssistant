@@ -1,11 +1,12 @@
 ---
 name: infinisynapse-server-api
 description: |
-  InfiniSynapse Server HTTP API、SSE 长任务、任务管理、数据源、RAG、上传下载、SDK 和后端集成。
+  InfiniSynapse Server HTTP API、SSE 长任务、任务管理、数据源、RAG、Skill 管理、上传下载、Partner SSO、SDK 和后端集成。
   激活条件:
     - 用户写 SDK、后端 route、API proxy、mini-app 或直接 curl 调 InfiniSynapse
     - 代码出现 /api/ai/events、/api/ai/message、taskId、connId、SSE
-    - 用户问数据源、RAG、文件上传、workspace 产物、下载预览
+    - 用户问数据源、RAG、Skill、文件上传、workspace 产物、下载预览
+    - 用户要做「使用 InfiniSynapse 登录」或代用户发起任务（Partner SSO）
 ---
 
 # InfiniSynapse Server API
@@ -70,6 +71,21 @@ GET /api/tools/storage/downloadTaskFile/:taskId?path=
 | `/api/tools/taskUpload/:taskId?subdir=upload_documents&naming=original` | Product proactively archives source documents |
 | `/api/upload/:directory` | Generic file upload |
 
+## Skill 管理（上游 server-api §6）
+
+- 用户级 Skill：`/api/ai_skill/install|update|uninstall|toggleStatus|installedVersions|list`；本地上传 `/api/ai_skill/upload`（zip 内任意层级须含 `SKILL.md`）、`editLocal`、`deleteLocal/:id`。active 后 Agent 可 `use_skill` 跨任务复用。
+- Skill 市场发现走账号 API（`https://api.infinisynapse.cn/api`）：`/skill/public/getSkillList`、`/skill/getSkillTags`、`/skill/downloadSkill`。
+- **两类 Skill 别混**：单次任务的方法论/`SKILL.md` 上下文（如报告快写）不装用户级 Skill——目录树写进任务 prompt，文件走 `upload_file_to_sandbox` 响应链路，只影响本次任务。
+- 需要长期复用才安装用户级 Skill；与数据源/RAG 一样，在 `newTask` 前准备好。
+
+## Partner SSO（何时用，端点见 `docs/reference/api-index.md` §8）
+
+- 产品需要「使用 InfiniSynapse 登录」或代用户发起任务（计费记用户账上）时使用；普通自有账号体系 + 自持 API Key 的产品不需要。
+- 走账号 API：`POST /api/auth/partner/sessions` → 用户在 app 域登录 → 回调一次性 `code`（5 分钟）→ `POST /api/auth/partner/token` 换用户资料；服务端间鉴权用 `X-Client-Id` + `X-Client-Secret`。
+- `withApiKey: true` 可签发该用户的 Partner API Key（`sk-` 开头）：归属用户本人、用户可吊销、可能签发失败要降级；与 `clientSecret` 一样只能放服务端。
+- 换到的 Partner API Key 调开放 API 时用主应用域名（`https://app.infinisynapse.cn/api/...`），不是 `api.` 域名；`newTask` 建议服务端预生成 `taskId`（UUID）做幂等。
+- 必须校验 `state` 防 CSRF；Webhook `partner.session.completed` 用 `X-Infini-Signature`（HMAC-SHA256）验签，且只作异步通知，登录主流程以 code 兑换为准。
+
 ## Common endpoints
 
 - `GET /api/ai/events`
@@ -87,8 +103,10 @@ GET /api/tools/storage/downloadTaskFile/:taskId?path=
 
 ## Do not invent
 
-If an endpoint is not in `server-api-reference.md`, search before using it:
+If an endpoint is not in the upstream snapshots, search before using it:
 
 ```bash
-rg "/api/<name>|<keyword>" upstream-docs/infinisynapse-site/zh/markdown/server-api-reference.md
+rg "/api/<name>|<keyword>" upstream-docs/infinisynapse-site/zh/markdown/
 ```
+
+Partner SSO 端点在 `partner-sso-integration-guide.md`；Skill 管理在 `server-api-reference.md` §6；官方浓缩版综合指南在 `vibe-coding-guide.md`。

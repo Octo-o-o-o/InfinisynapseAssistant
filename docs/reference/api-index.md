@@ -1,9 +1,9 @@
 # InfiniSynapse Server API 端点总目录
 
-> 单一事实基准。本表只收录 `upstream-docs/infinisynapse-site/zh/markdown/server-api-reference.md` 中明确出现的端点。
+> 单一事实基准。本表只收录上游快照中明确出现的端点：`upstream-docs/infinisynapse-site/zh/markdown/server-api-reference.md`（主来源）与 `partner-sso-integration-guide.md`（第 8 节 Partner SSO）。
 > SDK 示例、扫描器和产品方案都以本表为准。**不在本表里的端点不要直接使用，先 `rg` 搜上游文档确认。**
 >
-> 最后核对：2026-06-23，对应 `server-api-reference.md` 快照。
+> 最后核对：2026-07-09，对应 `server-api-reference.md`（含新增「Skill 管理」章节）与 `partner-sso-integration-guide.md` 快照。
 
 ## 全局约定
 
@@ -37,7 +37,7 @@
 
 | type | 必填字段 | 可选字段 | 说明 |
 | --- | --- | --- | --- |
-| `newTask` | `text` | `taskId`,`connId`,`images`,`files`,`autoApprovalSettings`,`chatSettings` | 新建任务（会做扣费校验与幂等） |
+| `newTask` | `text` | `taskId`,`connId`,`images`,`files`,`autoApprovalSettings`,`chatSettings` | 新建任务（会做扣费校验与幂等；客户端可预生成 `taskId`（UUID），重复提交同一 `taskId` 不会重复建任务） |
 | `askResponse` | `taskId`,`askResponse` | `text`,`images`,`files`,`connId` | 回复 Agent 提问；`askResponse` 一般为 `messageResponse` |
 | `cancelTask` | `taskId` | - | 取消运行中任务（推荐路径） |
 | `clearTask` | - | `taskId` | 清除任务；不传清空全部 |
@@ -127,7 +127,27 @@
 
 `/rag-market/my`、`/public`、`/is-subscribed/:id`、`/detail/:id`(GET)，`/subscribe`(POST `{ ragMarketId }`)。订阅后回 `GET /api/ai_rag_sdk?source=all&subscribeSource=all` 找到并 `enabled`。
 
-## 5. 文件上传（注册在根 `/api`）
+## 5. Skill 管理（前缀 `/api/ai_skill`）
+
+> 两种进入 Agent 工作流的方式别混：**用户级 Skill** 走本节接口安装，active 后 Agent 可用 `use_skill` 复用；**单次任务的方法论/`SKILL.md` 上下文**走任务文件上传链路（目录树写进 prompt + `upload_file_to_sandbox`），不会进用户 Skill 库。见上游 server-api §6.4「报告快写的 Skill 上下文模式」。
+
+| 端点 | 方法 | 说明 |
+| --- | --- | --- |
+| `/api/ai_skill/install` | POST | `{ skillId, name, alias, author, version, logo?, intro?, tags? }` 从市场下载 zip 并安装 |
+| `/api/ai_skill/update` | POST | 同 install 字段；下载新版本覆盖安装 |
+| `/api/ai_skill/uninstall` | POST | `{ skillId }` 卸载市场安装的 Skill |
+| `/api/ai_skill/toggleStatus` | POST | `{ skillId, status }`，`status` 为 `active`/`inactive` |
+| `/api/ai_skill/installedVersions` | GET | `{ [skillId]: { version, status } }`，判断已安装/可更新 |
+| `/api/ai_skill/list` | GET | `pageNum`/`pageSize`/`keyword` 分页已安装列表 |
+| `/api/ai_skill/upload` | POST | `multipart`：`file`(zip，任意层级须含 `SKILL.md`) + `name`/`alias`/`author`/`status`/`version`，可选 `logo`/`intro`/`tags`；安装为 `source=local` |
+| `/api/ai_skill/editLocal` | POST | `multipart`：`id` + 可选同上字段；传 `file` 时替换 Skill 文件 |
+| `/api/ai_skill/deleteLocal/:id` | POST | 删除本地上传的 Skill |
+
+### Skill 市场（账号 API，base `https://api.infinisynapse.cn/api`）
+
+`/skill/public/getSkillList`(GET, `pageNum`/`pageSize`/`alias`/`tag`/`status`)、`/skill/getSkillTags`(GET)、`/skill/downloadSkill`(GET, `id`+`version`，通常由 `install`/`update` 服务端内部调用)。
+
+## 6. 文件上传（注册在根 `/api`）
 
 | 端点 | 方法 | 用途 | 区分 |
 | --- | --- | --- | --- |
@@ -143,7 +163,7 @@
 
 > 两类任务上传别混：`/api/ai/upload` 是**被动响应** Agent 的 sandbox 请求；`/api/tools/taskUpload` 是产品**主动归档**。
 
-## 6. 文件存储与下载
+## 7. 文件存储与下载
 
 | 端点 | 方法 | 说明 |
 | --- | --- | --- |
@@ -152,7 +172,28 @@
 | `/api/tools/storage/downloadTaskFile/:taskId?path=` | GET | 下载任务工作目录文件（`path` 需 URL 编码）（**二进制**） |
 | `/api/tools/storage/downloadTaskFile/:taskId?path=&inline=1` | GET | `inline=1` 内联返回图片/SVG/PDF，适合报告预览页嵌入 |
 
-## 7. 错误码
+## 8. Partner SSO（账号 API，base `https://api.infinisynapse.cn/api`）
+
+> 来源：`partner-sso-integration-guide.md`。用于第三方产品接入「使用 InfiniSynapse 登录」，并可选签发以用户身份计费的 Partner API Key。服务端间接口用 `X-Client-Id` + `X-Client-Secret` 鉴权（不是 Bearer）；`clientSecret`/Partner API Key 都只能放服务端。
+
+| 端点 | 方法 | 鉴权 | 说明 |
+| --- | --- | --- | --- |
+| `/api/auth/partner/sessions` | POST | Client 头 | 创建登录会话；body `returnUrl`(必填，域名需在白名单)、`cancelUrl?`、`state?`(防 CSRF，强烈建议)、`externalUserId?`、`metadata?`；返回 `{ sessionId, entryUrl, expiresIn }`（会话默认 10 分钟） |
+| `/api/auth/partner/sessions/{sessionId}` | GET | Client 头 | 轮询会话状态：`pending`/`completed`(带 `user`)/`expired`；适合桌面端无回调场景，间隔 ≥2s |
+| `/api/auth/partner/token` | POST | Client 头 | `{ code, grant_type: "authorization_code", withApiKey? }`；`code` 一次性、5 分钟有效；`withApiKey:true` 额外返回该用户的 Partner API Key（`sk-` 开头，可能签发失败返回空，需降级） |
+| `/api/auth/partner/clients` | POST/GET | 用户 Bearer | 自助创建/查看接入应用（`name`、`allowedReturnDomains`、`webhookUrl?`）；每账号默认最多 5 个 |
+| `/api/auth/partner/clients/{clientId}` | PATCH | 用户 Bearer | 编辑应用；首次配置 Webhook 时返回一次 `webhookSecret` |
+| `/api/auth/partner/clients/{clientId}/enabled` | POST | 用户 Bearer | `{ "enabled": true\|false }` 启停应用 |
+| `/api/auth/partner/clients/{clientId}/rotate-secret` | POST | 用户 Bearer | 重置 `clientSecret`（旧的立即失效） |
+
+要点：
+
+- 用户资料以 `user.id` 为绑定键（邮箱/昵称可变，ID 不变）。
+- Webhook 事件 `partner.session.completed`，请求头 `X-Infini-Signature` 为 `hex(hmac_sha256(webhookSecret, 原始请求体))`；Webhook 是异步通知，登录主流程仍以 code 兑换为准。
+- Partner API Key 归属用户本人：计费记用户账上、出现在用户 API Key 列表（`Partner: <应用名>`）、用户可随时删除；同一用户+应用固定复用同一把。
+- 拿到 Partner API Key 后，任务等开放 API 走主应用域名（`https://app.infinisynapse.cn/api/...`），与 SSO 的 `api.` 域名不同。
+
+## 9. 错误码
 
 | 现象 | 处理 |
 | --- | --- |

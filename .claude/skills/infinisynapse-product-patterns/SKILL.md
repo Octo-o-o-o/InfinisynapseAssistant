@@ -13,7 +13,7 @@ description: |
 
 先读:
 
-- `upstream-docs/infinisynapse-site/zh/markdown/server-api-reference.md` 第 10 节
+- `upstream-docs/infinisynapse-site/zh/markdown/server-api-reference.md` 第 11 节（已落地 App 的 API 组合；官方在线示例见 `https://infinisynapse.cn/apps`）
 - `docs/reference/task-lifecycle.md`（含三类产品与 API 的对应表）
 - `docs/playbooks/llm-routing.md`（轻量直连 LLM vs agentic 长任务走 InfiniSynapse）
 - `docs/playbooks/secure-integration.md`（后端代理 + API Key 安全 + 状态托管）
@@ -95,6 +95,7 @@ Frontend -> Your Backend -> LlmGateway / InfiniSynapse Server API
 - 先列出并启用需要的 DB/RAG 资源。
 - prompt 明确报告目标、受众、结构和引用要求。
 - 多轮修订使用同一 `taskId` 的 `askResponse`。
+- 支持用户带方法论/写作规范：单次任务用「Skill 上下文模式」（`SKILL.md` 目录树写进 prompt，文件走 `upload_file_to_sandbox` 链路，见上游 server-api §6.4）；跨任务复用才安装用户级 Skill（`/api/ai_skill/upload`）。
 - 对长报告，推荐区分 `working/` 和 `final/`：Agent 可在 `working/` 写草稿、来源摘录和中间矩阵；业务系统只把 `final/` 下的 canonical artifacts 当作正式交付物。
 - `working/` 中避免使用 `report.md`、`scorecard.json`、`decision-memo.md` 等正式文件名，防止业务侧按 basename 收集时误把草稿当最终产物。
 
@@ -134,6 +135,10 @@ Frontend -> Your Backend -> LlmGateway / InfiniSynapse Server API
 - 邮件、站内信、Slack/webhook、CRM 写入等外部触达也要用 claim：provider 明确失败时可重试，provider 已接受后即使本地 finalize 失败也不要释放 claim，避免恢复任务重复通知。
 - SaaS 单 API Key 不等于每个业务用户都有物理隔离租户；多租户产品必须由自有后端做用户/组织权限和产物访问控制。
 - P0 不默认接 Browser Use 或长期 RAG；确认 per-user session、RAG 隔离和用户授权后再开放。
+
+### Sign in with InfiniSynapse（Partner SSO）
+
+适合希望复用 InfiniSynapse 账号体系、或代用户发起任务并把计费记在用户账上的产品。流程与端点见 `docs/reference/api-index.md` §8 和上游 `partner-sso-integration-guide.md`；`clientSecret` 与 Partner API Key 都只能放服务端。自有账号 + 自持 API Key 的常规产品不需要接。
 
 ## Design principles
 

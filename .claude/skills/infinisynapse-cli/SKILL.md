@@ -14,6 +14,20 @@ description: |
 - `upstream-docs/infinisynapse-site/zh/markdown/cli-api-reference.md`
 - `upstream-docs/infinisynapse-site/markdown/cli-api-reference.md` 作为英文补充参考
 
+## 安装与来源（2026-07-09 核对）
+
+- 官方一键安装（macOS/Linux，同时安装 CLI + companion skill，AI 编码工具可直接调用）：
+
+  ```bash
+  curl -fsSL https://infinisynapse.cn/cli-install/install.sh | bash   # 海外用 infinisynapse.com
+  ```
+
+- 默认安装位置 `~/.infini/bin/agent_infini`（Windows：`%USERPROFILE%\.infini\bin\agent_infini.exe`），不在 PATH 时用完整路径调用。
+- CLI 已开源：`https://github.com/chaozwn/infinisynapse-cli`（Go，MIT）。可 `make build` 自编译；排查 CLI 行为时可直接读源码（`internal/client/sse.go`、`internal/task/task.go`）。
+- `agent_infini --update` 自动更新（OSS manifest + SHA256 校验，`--check` 仅检查）；`agent_infini skill` / `--skill` 输出面向 AI Agent 的命令规范。
+- 首次使用：`agent_infini init --api-key sk-xxx`，配置写入 `~/.agent_infini/config.txt`（`server`/`console`/`api-key`/`prefer-language`/`default-output`）。
+- 输出默认 JSON（`--table` 切表格）；操作类命令输出 `{"success", "data", "message"}`，列表类直接输出数据结构，可管道给 `jq`。
+
 ## 服务关系
 
 `agent_infini` 使用两类服务:
