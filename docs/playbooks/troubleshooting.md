@@ -20,6 +20,9 @@
 | Agent 反复修补被截断文件 / 写文件工具缺参数 | 产物过长、schema 字段不够明确，或 smoke 用例要求完整报告 | 收紧 prompt：固定小文件、字符/条数上限、逐字字段名；设置总超时并 `cancelTask`；随后用 `getTaskWorkspace` 恢复已有产物 |
 | RAG 建库后检索不到本机文件 | SaaS 读不到本机路径 | `docDir` 必须是 InfiniSynapse 可访问位置；详见 [rag-file-placement.md](rag-file-placement.md) |
 | Agent 内部并行子任务（delegation）全部失败，产物含 `Exceeded maximum API request limit (0)` | 账户级子任务/并行配额不足（SaaS 侧限制，公开文档未记载；实测某账户配额为 0） | 通常无需处理：Agent 会自动回退为主任务串行执行，最终产物不受影响（真实任务验证）。若业务确需并行，用业务后端自发多个 `newTask` 编排（每个是独立一等任务，不走 delegation），或联系上游确认账户配额 |
+| Node fetch 客户端 `jsonRequest` 偶发永久挂起 | 超时 AbortSignal 只包住请求、在读 body 前就 `clearTimeout` | 让超时信号覆盖到 `response.text()`/`json()` 读完为止再清理（响应头到达 ≠ 响应体读完） |
+| 长跑服务里 SSE 连接/socket 随时间堆积 | SSE reader 在 return/throw 退出路径上没有释放 | 所有退出路径（正常结束、错误、超时、外部 abort）统一 `reader.cancel()` + `releaseLock()`（放 `finally`） |
+| 上游会话/任务资源随任务量累积 | 任务到终态后没有回收 provider 侧会话 | 任务进入 COMPLETED / CANCELLED / FAILED（确认不再 salvage）后 best-effort 调 `clearTask`；失败只记日志不影响业务终态 |
 
 ## 私有化部署专项
 
