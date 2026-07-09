@@ -175,7 +175,7 @@ cd samples/sdk/typescript && INFINISYNAPSE_API_KEY=sk-xxx npm run smoke:live
 当前验证状态（2026-07-09）：
 
 ```text
-npm test: PASS（77 项，0 失败；含 mock server 全链路集成测试）
+npm test: PASS（80 项，0 失败；含 mock server 全链路集成测试）
 bash tools/doctor.sh: PASS，仅 upstream-src/infini_docker 缺失、GitHub source repository currently unreachable 为预期 WARN
 ```
 

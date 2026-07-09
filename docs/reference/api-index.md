@@ -1,6 +1,6 @@
 # InfiniSynapse Server API 端点总目录
 
-> 单一事实基准。本表只收录上游快照中明确出现的端点：`upstream-docs/infinisynapse-site/zh/markdown/server-api-reference.md`（主来源）与 `partner-sso-integration-guide.md`（第 8 节 Partner SSO）。
+> 单一事实基准。上游 8 页快照中，仅 `upstream-docs/infinisynapse-site/zh/markdown/server-api-reference.md`（主来源）与 `partner-sso-integration-guide.md`（第 8 节 Partner SSO）含端点定义，本表只收录这两页中明确出现的端点。
 > SDK 示例、扫描器和产品方案都以本表为准。**不在本表里的端点不要直接使用，先 `rg` 搜上游文档确认。**
 >
 > 最后核对：2026-07-09，对应 `server-api-reference.md`（含新增「Skill 管理」章节）与 `partner-sso-integration-guide.md` 快照。

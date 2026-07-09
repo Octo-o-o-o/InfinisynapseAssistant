@@ -196,10 +196,25 @@
 最终验证（本机实测输出）：
 
 ```text
-npm test: PASS=77 FAIL=0 SKIP=0（基线 65 → 77）
+npm test: PASS=80 FAIL=0 SKIP=0（基线 65 → 80）
 bash tools/doctor.sh: PASS（仅 infini_docker 缺失、上游 GitHub 不可达两条预期 WARN）
 bash tools/sync-skills.sh --check: PASS
 git diff --check: 干净
 ```
 
 实施与方案的偏差：无功能性偏差；实施中额外修正了 CHANGELOG 的 Unreleased 归并（0.3.5 后累积项并入 0.4.0 发布说明）。
+
+## 9. Subagent review 结论与修复（2026-07-09）
+
+code-reviewer 子代理评审 5 个提交：无 BLOCKER，2 MAJOR / 3 MINOR / 3 NIT，已全部修复并回归：
+
+| 级别 | 问题 | 修复 |
+| --- | --- | --- |
+| MAJOR-1 | `INF-SEC-002` 的 `@Component` 特征未限定 `.ets`，Java/Kotlin Spring 后端代理被误报 HIGH（实测复现） | 装饰器特征仅 `.ets` 生效；`@ohos./@kit.` 保持全扩展名；新增 Angular 前端特征 `from '@angular/` 保住正报面；新增 `good-spring-backend-proxy.java`（exit 0）/`bad-angular-direct.ts`（exit 2）fixtures + 断言 |
+| MAJOR-2 | 鸿蒙片段把 `requestInStream` 的 Promise resolve 当"流结束"（Promise 在响应头到达即 resolve） | 完成信号改 `on('dataEnd')`，Promise 只校验响应码；注意事项补充语义说明 |
+| MINOR-1 | 下游 CI 扫描示例扩展名缺 `.ets`（及 `.cjs/.kt/.rb/.php`） | 与 post-edit.sh 对齐 |
+| MINOR-2 | 鸿蒙 SSE 片段缺 CRLF 归一化，与 sse.ts 口径不符 | buffer 拼接前归一化 `\r\n`/`\r` |
+| MINOR-3 | `install-into.sh` 重复安装空行累积 | 删块时吃掉尾部空行；实测 3 次重装 max 连续空行 = 1 |
+| NIT-1/2/3 | manifest 未镜像 `.claude/skills`、`grep -c \|\| echo 0` 双行输出、api-index 头部措辞 | 全部修复 |
+
+修复后回归：`npm test PASS=80 FAIL=0`，doctor / sync-skills --check / git diff --check 全绿。

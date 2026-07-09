@@ -44,6 +44,7 @@ for d in "$ROOT"/.agents/skills/infinisynapse-*; do
   run cp -R "$d" "$TARGET/.claude/skills/$name"
 done
 run cp "$ROOT/.agents/skills/manifest.json" "$TARGET/.agents/skills/manifest.json"
+run cp "$ROOT/.agents/skills/manifest.json" "$TARGET/.claude/skills/manifest.json"
 
 # 2. 幂等写入 AGENTS.md 引用块
 BEGIN_MARK="<!-- infinisynapse-assistant:begin (managed by tools/install-into.sh) -->"
@@ -71,11 +72,14 @@ if [[ $DRY_RUN -eq 1 ]]; then
   say "[dry-run] 会写入/替换标记块到 $AGENTS_FILE"
 else
   if [[ -f "$AGENTS_FILE" ]] && grep -qF "$BEGIN_MARK" "$AGENTS_FILE"; then
-    # 先删旧块（BSD/GNU awk 兼容：-v 值必须单行，块正文单独追加）
+    # 先删旧块（BSD/GNU awk 兼容：-v 值必须单行，块正文单独追加），
+    # 并吃掉尾部空行，避免重复安装时分隔空行累积
     awk -v begin="$BEGIN_MARK" -v end="$END_MARK" '
       $0 == begin { inblock=1; next }
       $0 == end { inblock=0; next }
-      !inblock { print }
+      inblock { next }
+      NF { for (i = 0; i < blank; i++) print ""; blank = 0; print; next }
+      { blank++ }
     ' "$AGENTS_FILE" > "$AGENTS_FILE.tmp" && mv "$AGENTS_FILE.tmp" "$AGENTS_FILE"
   fi
   { [[ -s "$AGENTS_FILE" ]] && printf '\n'; printf '%s\n' "$BLOCK"; } >> "$AGENTS_FILE"

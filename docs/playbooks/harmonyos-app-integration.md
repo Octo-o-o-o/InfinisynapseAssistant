@@ -46,9 +46,13 @@ export class SseClient {
   connect(url: string, token: string, onEvent: (ev: SseEvent) => void,
           onError: (err: Error) => void, onComplete: () => void): void {
     this.httpRequest.on('dataReceive', (chunk: ArrayBuffer) => {
-      this.buffer += this.decoder.decodeToString(new Uint8Array(chunk), { stream: true });
+      const text = this.decoder.decodeToString(new Uint8Array(chunk), { stream: true });
+      // SSE 允许 CRLF 行尾，先归一化，否则 '\n\n' 事件分隔永远匹配不到
+      this.buffer += text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
       this.drain(onEvent);
     });
+    // 流结束以 dataEnd 为准；requestInStream 的 Promise 在响应头到达时就 resolve（值为响应码），不代表流结束
+    this.httpRequest.on('dataEnd', () => onComplete());
     this.httpRequest.requestInStream(url, {
       method: http.RequestMethod.GET,
       header: {
@@ -57,7 +61,9 @@ export class SseClient {
         'Accept': 'text/event-stream',
       },
       readTimeout: 0, // SSE 长连接不设读超时；死连接靠心跳看门狗判定
-    }).then(() => onComplete()).catch((err: Error) => onError(err));
+    }).then((code: number) => {
+      if (code >= 400) onError(new Error(`SSE HTTP ${code}`));
+    }).catch((err: Error) => onError(err));
   }
 
   private drain(onEvent: (ev: SseEvent) => void): void {
@@ -84,6 +90,7 @@ export class SseClient {
 
 - `module.json5` 需声明 `ohos.permission.INTERNET`；生产必须 HTTPS。
 - 多行 `data:` 要拼接（上例已处理）；不要只解析 `data:` 而丢 `event:`。
+- `requestInStream` 返回的 Promise 在**响应头到达时**就 resolve（值为响应码），不能当作"流结束"；流式正文走 `on('dataReceive')`，接收完毕以 `on('dataEnd')` 为准。
 - 断线重连带同一业务任务 ID，重连后由后端用 `getUiMessageById` 补齐错过的消息（对齐 `task-lifecycle.md` 的健壮性清单）。
 
 ## 生命周期与恢复（鸿蒙特有约束）

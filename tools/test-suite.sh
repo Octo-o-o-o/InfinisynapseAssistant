@@ -40,6 +40,9 @@ if [ -f "$SCANNER" ]; then
   assert_contains_rule "tools/hooks/test-fixtures/bad-wrong-success-code.ts" "INF-API-001"
   assert_exit "tools/hooks/test-fixtures/bad-harmonyos-direct.ets" 2
   assert_contains_rule "tools/hooks/test-fixtures/bad-harmonyos-direct.ets" "INF-SEC-002"
+  assert_exit "tools/hooks/test-fixtures/bad-angular-direct.ts" 2
+  assert_contains_rule "tools/hooks/test-fixtures/bad-angular-direct.ts" "INF-SEC-002"
+  assert_exit "tools/hooks/test-fixtures/good-spring-backend-proxy.java" 0
   assert_exit "tools/hooks/test-fixtures/good-server-proxy.ts" 0
   assert_exit "tools/hooks/test-fixtures/good-deploy.env" 0
   assert_exit "tools/hooks/test-fixtures/good-doc-tokens.ts" 0
@@ -148,7 +151,7 @@ grep -q "/api/auth/partner" docs/reference/api-index.md && ok "api-index 含 Par
 INSTALL_T="$(mktemp -d)"
 printf '# existing agents file\n' > "$INSTALL_T/AGENTS.md"
 if bash tools/install-into.sh "$INSTALL_T" >/dev/null 2>&1 && bash tools/install-into.sh "$INSTALL_T" >/dev/null 2>&1; then
-  marks="$(grep -c 'infinisynapse-assistant:begin' "$INSTALL_T/AGENTS.md" 2>/dev/null || echo 0)"
+  marks="$(grep -c 'infinisynapse-assistant:begin' "$INSTALL_T/AGENTS.md" 2>/dev/null || true)"
   if [ "$marks" = "1" ] && [ -f "$INSTALL_T/.agents/skills/infinisynapse-server-api/SKILL.md" ] && [ -f "$INSTALL_T/.claude/skills/infinisynapse-server-api/SKILL.md" ]; then
     ok "install-into.sh 幂等且 skills 安装齐全"
   else

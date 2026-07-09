@@ -16,8 +16,9 @@ jobs:
           [ -f "$SCANNER" ] || { echo "scanner not found; vendor the rule pack first"; exit 0; }
           worst=0
           for f in $(git diff --name-only --diff-filter=ACM origin/${{ github.base_ref }}...HEAD); do
+            # 扩展名列表与 tools/hooks/post-edit.sh 保持一致
             case "$f" in
-              *.ts|*.tsx|*.js|*.jsx|*.mjs|*.py|*.go|*.java|.env|.env.*|*.yml|*.yaml|*compose*) ;;
+              *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs|*.ets|*.py|*.go|*.java|*.kt|*.rb|*.php|.env|.env.*|*.yml|*.yaml|*compose*|*.tf|*.toml) ;;
               *) continue;;
             esac
             [ -f "$f" ] || continue

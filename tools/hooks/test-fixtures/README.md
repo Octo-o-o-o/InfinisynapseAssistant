@@ -6,6 +6,7 @@
 | --- | --- | --- |
 | `bad-hardcoded-key.ts` | 2 | INF-SEC-001（硬编码 Bearer） |
 | `bad-frontend-direct.tsx` | 2 | INF-SEC-002（前端直连）+ INF-SSE-001 |
+| `bad-angular-direct.ts` | 2 | INF-SEC-002（Angular 前端直连） |
 | `bad-harmonyos-direct.ets` | 2 | INF-SEC-002（鸿蒙 ArkTS 客户端直连） |
 | `bad-authing.env` | 2 | INF-ENV-001/002/003 |
 | `bad-authing-path.env` | 1 | INF-ENV-003（AUTHING_SERVER_URL 路径不是裸 /api） |
@@ -16,6 +17,7 @@
 | `good-deploy.env` | 0 | 干净（AUTHING_SERVER_URL 正确） |
 | `good-doc-tokens.ts` | 0 | 干净（注释/占位 token 不误报） |
 | `good-harmonyos-proxy.ets` | 0 | 干净（鸿蒙 app 只连自有后端） |
+| `good-spring-backend-proxy.java` | 0 | 干净（Spring `@Component` 后端代理不被当客户端误伤） |
 
 退出码语义：`2`=存在 HIGH（应阻塞），`1`=仅 MEDIUM/LOW（提醒），`0`=干净，`64`=用法错误（文件不存在等，CI wrapper 不要吞掉）。
 

@@ -176,10 +176,20 @@ case "$base" in
     done < <(grep -nE 'Bearer [A-Za-z0-9][A-Za-z0-9._-]{15,}' "$FILE" 2>/dev/null || true)
 
     # INF-SEC-002：前端/客户端文件直连 InfiniSynapse（API Key 暴露风险）
-    # 前端特征：React/Vue/浏览器全局；客户端特征：鸿蒙 ArkTS（@ohos./@kit. 导入、@Entry/@Component 装饰器）
+    # 前端特征：React/Vue/Angular/浏览器全局；客户端特征：鸿蒙 ArkTS。
+    # 注意：@Entry/@Component 装饰器只在 .ets 内算 ArkTS 特征——Java/Kotlin Spring 后端的 @Component 是合法后端代理，不能误伤。
     if code_has 'app\.infinisynapse\.(cn|com)|/api/ai/(events|message)'; then
-      if code_has "from[[:space:]]+['\"]react['\"]|from[[:space:]]+['\"]vue['\"]|useState\(|window\.|document\." \
-         || code_has "@ohos\.|@kit\.|@Entry([^A-Za-z]|$)|@Component([^A-Za-z]|$)"; then
+      client_hit=0
+      if code_has "from[[:space:]]+['\"]react['\"]|from[[:space:]]+['\"]vue['\"]|from[[:space:]]+['\"]@angular/|useState\(|window\.|document\."; then
+        client_hit=1
+      fi
+      if code_has "@ohos\.|@kit\."; then
+        client_hit=1
+      fi
+      if [[ "$base" == *.ets ]] && code_has "@Entry([^A-Za-z]|$)|@Component([^A-Za-z]|$)"; then
+        client_hit=1
+      fi
+      if [[ "$client_hit" -eq 1 ]]; then
         ln="$(first_line 'app\.infinisynapse\.(cn|com)|/api/ai/(events|message)')"
         add_finding "INF-SEC-002" "HIGH" "$ln" "前端/客户端文件直连 InfiniSynapse：API Key 会进 bundle/安装包。改用后端代理路由"
       fi
