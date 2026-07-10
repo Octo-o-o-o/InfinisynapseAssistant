@@ -141,6 +141,8 @@ Frontend -> Your Backend -> LlmGateway / InfiniSynapse Server API
 
 适合希望复用 InfiniSynapse 账号体系、或代用户发起任务并把计费记在用户账上的产品。流程与端点见 `docs/reference/api-index.md` §8 和上游 `partner-sso-integration-guide.md`；`clientSecret` 与 Partner API Key 都只能放服务端。自有账号 + 自持 API Key 的常规产品不需要接。
 
+接 `withApiKey:true` 用户计费时的账号模型、key 存储与资源边界默认做法（计费身份 = 资源命名空间：key 按资源集创建时定死、任务全链路同一把 key、SSO 邮箱冲突不自动合并、20 把上限降级、双 key 任务列表验证计费归属）见 `docs/playbooks/partner-sso-account-billing.md`。
+
 ## Design principles
 
 - 先设计恢复: 刷新页面后能用 `taskId` 读回进度和产物。

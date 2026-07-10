@@ -127,6 +127,7 @@ Frontend -> Your Backend -> LlmGateway / InfiniSynapse Server API
 - `newTask` 是外部副作用；预生成 `taskId`/`connId`，用输入 hash 去重，worker 恢复时先查消息和 workspace，不要盲目自动重发。
 - 部署停机不等于用户取消；worker shutdown 应进入 recovering，不能把 provider task 当失败路径自动 cancel。
 - plan/act 审批要有业务状态机；计划完成的 `waiting_user` 仍算活跃任务，approve 前先确认 SSE，切 act 后再发执行 `askResponse`。
+- 不是所有任务都需要 plan 审批：按次付费/全自动任务可按 kind 声明 direct-act（`newTask` 直接 `chatSettings:{mode:"act"}` + autoApprovalSettings 全开），跳过 `WAITING_APPROVAL` 状态位；质量兜底交给完成后的 required artifacts schema 校验（缺核心产物即业务失败并触发退款/补偿）。注意 direct-act 任务在恢复路径（recovery/`waitingForApproval` 判定）也要豁免审批停靠，否则重启后会卡死在不存在的审批位。
 - `waiting_user` / `WAITING_APPROVAL` 要有 TTL；超时后条件认领，按需 `cancelTask`，再尝试 workspace salvage，最后释放并发占位并做幂等退款/用量补偿。不要让待审批任务永久占用用户额度或 active slot。
 - 产品历史、下载和合规审计不要只依赖 provider workspace；完成后把最终 PDF/DOCX/ZIP/JSON/Markdown 等产物复制到自有 artifact store，并保留 provider path、storage key、checksum 和可选 manifest 作为来源索引（见 `docs/playbooks/artifact-archiving.md`）。
 - 用户下载走自有 artifact store；生产缺 archived object 或对象超限时返回可解释错误并触发补偿，不要把 provider workspace fallback 作为长期下载能力。
@@ -139,6 +140,8 @@ Frontend -> Your Backend -> LlmGateway / InfiniSynapse Server API
 ### Sign in with InfiniSynapse（Partner SSO）
 
 适合希望复用 InfiniSynapse 账号体系、或代用户发起任务并把计费记在用户账上的产品。流程与端点见 `docs/reference/api-index.md` §8 和上游 `partner-sso-integration-guide.md`；`clientSecret` 与 Partner API Key 都只能放服务端。自有账号 + 自持 API Key 的常规产品不需要接。
+
+接 `withApiKey:true` 用户计费时的账号模型、key 存储与资源边界默认做法（计费身份 = 资源命名空间：key 按资源集创建时定死、任务全链路同一把 key、SSO 邮箱冲突不自动合并、20 把上限降级、双 key 任务列表验证计费归属）见 `docs/playbooks/partner-sso-account-billing.md`。
 
 ## Design principles
 

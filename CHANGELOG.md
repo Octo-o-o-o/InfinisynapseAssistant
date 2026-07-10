@@ -5,7 +5,9 @@
 
 ## [Unreleased]
 
-（暂无）
+### Added（下游反哺 · 鼹鼠/yanshu）
+- `docs/playbooks/partner-sso-account-billing.md`：Partner SSO 账号整合与计费归属特定用法——「计费身份 = 平台资源命名空间」铁律（数据源/RAG/任务账号私有，开发者 key vs 用户 key 必须按资源集创建时定死，任务全链路同一把 key）、Partner API Key 服务端加密落库与 20 把上限降级、SSO 邮箱冲突不自动合并（防接管）、解绑语义、双 key 任务列表验证计费归属的自查法。基于 partner-sso-integration-guide 实接验证（entryUrl 会话创建 + withApiKey 兑换真实跑通）。
+- `docs/README.md` 阅读路径、`llms.txt` playbooks 行、product-patterns skill 的 Partner SSO 节补充指向新 playbook（skill 镜像已同步）。
 
 ## [0.4.0] - 2026-07-09
 
