@@ -110,13 +110,15 @@ GET /api/ai_task/getTaskWorkspace/:taskId       # 重新枚举产物
 
 - **SSE 重连**：连接断开要带同一 `connId` 重连；重连后用 `getUiMessageById` 补齐错过的消息。
 - **任务归属**：所有事件、结构化结果、上传映射、workspace 产物和业务状态都要按 `taskId` 隔离；并发或重试时使用 `taskId + attempt` 等复合键，不能只按裸消息 `ts` 或业务名称归属。
-- **SSE 建连超时、流不限时**：`GET /api/ai/events` 的建连（响应头返回前）要设超时（如 30s，与普通 REST 一致），否则握手挂死会永久占用 consumer；建连成功后**不要**给流本身设总超时——长任务事件流可持续数小时，流的生命周期交给调用方的 AbortSignal + idle 超时判定（见"心跳"条）。
+- **SSE 建连超时、流不限时**：`GET /api/ai/events` 的建连（响应头返回前）要设有界超时，否则握手挂死会永久占用 consumer；建连窗口必须与普通 REST 独立配置，并按生产延迟分位、上游拥塞和公网代理总窗口校准（可从 30-60s 起步），不能因初始数值相同就复用一个永远不变的字段。建连成功后**不要**给流本身设总超时——长任务事件流可持续数小时，流的生命周期交给调用方的 AbortSignal + idle 超时判定（见"心跳"条）。
 - **"先 SSE 后 newTask"收敛为单点 launcher**：业务后端若有多条任务提交路径（主任务、复核子任务、深研 child task……），不要在每条路径手写时序——封装一个 launcher 模板（openEvents → 注册 consumer → 记录已连接 → createTask → 记录已提交 → 后台消费；任一步失败则 abort + 注销 consumer + 原样抛错，失败后的业务补偿留在调用方），铁律只在这一个函数里强制。配一个 mock client 按调用顺序断言的测试（如 `["openEvents","createTask"]` 序列断言），任何新增提交路径改动都无法绕过时序检查。
 - **阶段切换后继续消费**：plan 阶段为了进入人工审批可能会停止当前 consumer；approve 后、发送 act prompt 前要重新建立/确认 SSE consumer。
 - **首事件超时**：连上 SSE 后等 `state.ready` 设 2~3s 超时兜底，超时也继续发 `newTask`（文档允许）。
 - **心跳**：`heartbeat` 仅保活；长时间无任何事件（含心跳）才判定连接死亡。
 - **idle 只表示连接活性**：heartbeat、keepalive 或无法归一化的字节都会持续重置 SSE idle 计时；不能用 idle timeout 代替业务进度/终态对账。仍在 `planning` 等运行态的业务记录应使用独立、可中止的周期检查回读 `getUiMessageById`，严格校验完整结果后幂等推进状态；consumer 换代、终态或 shutdown 时立即停止该检查。
 - **业务总超时和预算守卫**：除 SSE idle timeout 外，产品层还要用独立时钟实现总耗时、可识别工具事件、child task 数、repair 轮数等预算，不能因为 SSE 持续有流量就跳过 hard timeout。Prompt 中的"最多搜索 N 次/最多引用 N 个来源"只是软目标，不是服务端硬限制；真正的硬边界要由业务后端计时、计数并在超限时调用 `/api/ai/message` `type=cancelTask`。
+- **传输窗口分层**：普通 JSON request、SSE 响应头建连、multipart 上传、二进制下载和业务总运行时是五个不同边界；分别配置、分别观测，不能用一个短 timeout 覆盖所有路径，也不能把加长 REST 窗口误用成 SSE 流总时限。同步产品路由还要给 connector 前置工作和反向代理/CDN 留出余量。
+- **写请求超时不是安全未执行**：`newTask`、`askResponse`、`togglePlanActMode`、`cancelTask` 等 `/api/ai/message` 写入在客户端 abort 时可能已被上游接收；没有 provider idempotency key 时禁止通用层自动重放。先持久化 dispatch 状态并回读 `getUiMessageById` / task workspace 对账；只有能证明未接收时才重发，无法证明时进入显式恢复/人工处理，不能把本地 timeout 当成上游拒绝。
 - **离场止血与交接**：未完成任务因 abort/超时/重连耗尽退出时，已发出 `newTask` 就 best-effort `cancelTask`；优雅停机或恢复交接必须显式保留任务并进入 recovering，不能在普通 shutdown 路径取消。
 - **上下文变更开新任务**：只有来源、prompt contract、启用资源、凭据和权限都不变时才用同一 `taskId` 发 `askResponse`；任何上下文变化都要创建新任务并保存完整输入/来源快照。
 - **超时恢复**：取消或失败后不要只丢弃任务；先用 `getTaskWorkspace` 枚举已有产物，`previewFile` 校验必需文件和 schema。产物完整可按业务规则归档，产物不完整则保留失败状态和可审计错误。
