@@ -30,6 +30,8 @@ Browser Use 的自动审批只适合用户已明确指定的只读 URL/域名。
 
 > 严格 schema 产物经验：执行 prompt 若要求 Agent 写 JSON，并且下游会做 schema 校验，必须列出逐字字段名和禁止别名。真实消费项目里，模型容易把 `id/label/score0To5/status/reason/title/probability/mitigation` 写成 `name/score/passed/detail/description` 等自然字段；后端应继续严格校验，prompt 负责减少重试。
 
+> 正式 JSON 与文件工具经验：生成端不能只凭渲染外观看似正确就 completion；应回读正式 JSON 并用可用 parser/schema 工具严格解析。JSON string 内的自然语言引用优先使用 Unicode 引号，确需 ASCII 双引号时必须按 JSON 词法转义。调用 workspace 写入/替换工具时必须遵循当次运行时 tool schema 并提供全部 required 参数；真实任务已观察到缺少 `brief` 会触发无效重试，因此至少核对 `path`、写入内容与 `brief`。服务端仍应 fail closed，不要自动修补 malformed JSON。
+
 > approve 后执行 prompt 经验：产品侧已经完成人工审批并切到 act 后，执行 prompt 要明确"不要再调用 `plan` / `switch_mode` / `plan_mode_response` / `update_plan` 或模式切换工具，直接执行已批准计划"。真实 smoke 中，若 act prompt 被上游当作新请求，Agent 可能先尝试内部计划工具；参数不完整时会进入工具重试循环并触发 `notification.type=error`。
 
 > 回归 review 经验：不要只检查 prompt 是否写了"先计划"。代码 review 和 smoke 必须同时检查出站 payload 与默认值：计划入口实际发送 `chatSettings.mode="plan"`；通用 client/runner 默认值没有悄悄改成 `act`；approve 路径在 `askResponse` 前发送 `togglePlanActMode` 切到 `act`；追加指令、拒绝、取消等非 approve 路径不会切到 `act`。如果 diff 改到 `chatSettings`、`mode`、`togglePlanActMode`、自动审批或 plan/act 测试 fixture，要按高风险变更审。
@@ -54,7 +56,7 @@ Browser Use 的自动审批只适合用户已明确指定的只读 URL/域名。
 
 真实集成 smoke 的目标是验证"先 SSE → plan → 人工审批 → act → workspace 产物 → schema 校验 → 私密下载"闭环，不是生成完整业务报告。默认 smoke 应选择小型公开目标，关闭 Browser/RAG/数据源，使用短 prompt 和固定小产物。
 
-执行 prompt 要写清硬上限：固定文件名、每个 Markdown 的字符上限、JSON 记录条数上限、schema 字段逐字匹配、先写固定产物再 completion。否则 Agent 容易在 `write_to_file` / `replace_in_file` 中反复修补长文件，出现截断、缺参数或补写循环，导致 smoke 拖到超时并持续消耗调用。
+执行 prompt 要写清硬上限：固定文件名、每个 Markdown 的字符上限、JSON 记录条数上限、schema 字段逐字匹配、文件工具 required 参数、先写固定产物、回读并严格 parse JSON 后再 completion。否则 Agent 容易在 `write_to_file` / `replace_in_file` 中反复修补长文件，出现截断、缺参数、补写循环或不可解析的 JSON，导致 smoke 拖到超时并持续消耗调用。
 
 后端 smoke runner 也要有工程护栏：业务总超时、失败/超时后 `cancelTask`、usage ledger、脱敏事件样本、以及 timeout/failure 后先 `getTaskWorkspace` 恢复已有产物并做 schema 校验。已有必需产物全部有效时可以归档为成功；产物不完整时标记失败并保留安全错误。
 
@@ -87,6 +89,7 @@ Browser Use 的自动审批只适合用户已明确指定的只读 URL/域名。
 - 计划阶段收到 `plan_mode_response` 后仍继续等待 `completion_result`，导致业务任务卡在 planning。
 - 把空 `plan_mode_response` 或回显的原始 prompt 当成计划完成，导致过早 approve。
 - 只描述 JSON schema 的语义，不写逐字字段名，导致 Agent 输出字段别名而 schema 校验失败。
+- 文件写入/替换调用缺少运行时 tool schema 的 required 参数，或正式 JSON 未经回读 parse 就 completion。
 - 把真实 smoke 当完整报告生成，让 Agent 写长 Markdown/JSON，触发截断补写循环和额外消耗。
 - 只看文案或 prompt，没看实际出站 payload，导致计划任务的 SDK 默认值、runner 默认值或测试 fixture 被改成 `act` 后仍通过 review。
 - approve 后没有重新建立/确认 SSE，导致 act 阶段实际运行但业务后端收不到产物完成事件。

@@ -17,7 +17,7 @@
 | 下载到一堆"乱码 JSON" | 把二进制下载端点当 JSON 解析 | `downloadTaskFile`/`downloadZip`/`storage/download` 是二进制流，`-o file` 存盘 |
 | Agent "看不到"数据源/知识库 | 资源没在建任务前启用 | `newTask` 前先 `list` + `enabled`（市场资源先订阅） |
 | Agent 要文件但任务卡住 | 收到 `upload_file_to_sandbox` 没应答 | 先 `/api/ai/upload?taskId=` 上传，再 `askResponse` 回传结果 |
-| Agent 反复修补被截断文件 / 写文件工具缺参数 | 产物过长、schema 字段不够明确，或 smoke 用例要求完整报告 | 收紧 prompt：固定小文件、字符/条数上限、逐字字段名；设置总超时并 `cancelTask`；随后用 `getTaskWorkspace` 恢复已有产物 |
+| Agent 反复修补被截断文件 / 写文件工具缺参数 / 正式 JSON 无法解析 | 产物过长、schema/工具必填参数不够明确，或 JSON string 内含未转义引号 | 收紧 prompt：固定小文件、字符/条数上限、逐字字段名；文件写入/替换调用按运行时 tool schema 提供全部 required 参数（实测需特别核对 `path`、内容、`brief`）；completion 前回读正式 JSON 并严格 parse，string 内自然语言引号优先用 Unicode 引号，ASCII 双引号必须 JSON 转义；设置总超时并 `cancelTask`，随后用 `getTaskWorkspace` 恢复已有产物 |
 | RAG 建库后检索不到本机文件 | SaaS 读不到本机路径 | `docDir` 必须是 InfiniSynapse 可访问位置；详见 [rag-file-placement.md](rag-file-placement.md) |
 | Agent 内部并行子任务（delegation）全部失败，产物含 `Exceeded maximum API request limit (0)` | 账户级子任务/并行配额不足（SaaS 侧限制，公开文档未记载；实测某账户配额为 0） | 通常无需处理：Agent 会自动回退为主任务串行执行，最终产物不受影响（真实任务验证）。若业务确需并行，用业务后端自发多个 `newTask` 编排（每个是独立一等任务，不走 delegation），或联系上游确认账户配额 |
 | Node fetch 客户端 `jsonRequest` 偶发永久挂起 | 超时 AbortSignal 只包住请求、在读 body 前就 `clearTimeout` | 让超时信号覆盖到 `response.text()`/`json()` 读完为止再清理（响应头到达 ≠ 响应体读完） |
