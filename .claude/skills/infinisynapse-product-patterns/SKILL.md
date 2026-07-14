@@ -56,9 +56,12 @@ Frontend -> Your Backend -> LlmGateway / InfiniSynapse Server API
 7. 任务完成后读取 workspace 产物；正式产品至少把必需产物归档到自有对象存储，成熟产品可再写 manifest 和私有 workspace ZIP，并保存业务结果记录。
 8. 用户停止时调用 `POST /api/ai/message`，`type=cancelTask`；旧部署才 fallback `GET /api/ai_task/cancelTask?taskId=...`。
 
+未完成任务因外部 abort、总超时或重连耗尽离开消费循环时，已发出的任务默认 best-effort `cancelTask` 止血；优雅停机、恢复或 worker 交接必须显式保留任务（SDK `runTask` 传 `cancelOnExit:false`），不能把普通 shutdown 当成用户取消。
+
 ## Runtime guard and background delivery
 
 - Prompt 中的"最多搜索 N 次/最多引用 N 个来源"是软目标，不是 InfiniSynapse 的硬预算 API。真正的成本边界要由业务后端实现：总耗时、SSE idle 次数、可识别工具事件计数、child task 数、repair 轮数和手动/自动 `cancelTask`。
+- 同一 SSE 连接可能承载用户级广播；所有事件、结构化输出、上传映射和 workspace 归属都要按 `taskId` 过滤，并在并发重试时使用 `taskId + attempt` 等复合键。缺少 `taskId` 只能兼容旧事件，不能在并发场景使用无作用域 fallback。
 - 超时或取消后不要直接丢弃任务。先用 `getTaskWorkspace` 枚举已有产物，校验必需文件和 schema；产物完整时可进入业务侧 validating/needs_review，产物不完整才保留 failed/cancelled。
 - 如果产品承诺"用户离开页面后继续运行并通知"，不能依赖浏览器页面持有 SSE。后端 worker 必须托管 SSE 生命周期；断线或进程重启后用 `getUiMessageById` + `getTaskWorkspace` 恢复状态。
 - 部署滚动、SIGTERM 或 worker shutdown 不是用户取消。先 pause/停止接新任务，把 active 业务任务标记为 recovering/needs_recovery，后续恢复进程重接 SSE 或查 workspace；不要在普通停机 catch 里调用 `cancelTask`，否则会把仍在 provider 侧运行的任务错误终止。
@@ -94,7 +97,7 @@ Frontend -> Your Backend -> LlmGateway / InfiniSynapse Server API
 - 用 `/api/tools/taskUpload/:taskId?subdir=upload_documents&naming=original` 归档资料。
 - 先列出并启用需要的 DB/RAG 资源。
 - prompt 明确报告目标、受众、结构和引用要求。
-- 多轮修订使用同一 `taskId` 的 `askResponse`。
+- 多轮修订只有在来源集合、prompt contract、启用资源、凭据和权限都不变时才使用同一 `taskId` 的 `askResponse`；新增/替换来源或改变上述任一项都创建新任务并保存完整选择快照。
 - 支持用户带方法论/写作规范：单次任务用「Skill 上下文模式」（`SKILL.md` 目录树写进 prompt，文件走 `upload_file_to_sandbox` 链路，见上游 server-api §6.4）；跨任务复用才安装用户级 Skill（`/api/ai_skill/upload`）。
 - 对长报告，推荐区分 `working/` 和 `final/`：Agent 可在 `working/` 写草稿、来源摘录和中间矩阵；业务系统只把 `final/` 下的 canonical artifacts 当作正式交付物。
 - `working/` 中避免使用 `report.md`、`scorecard.json`、`decision-memo.md` 等正式文件名，防止业务侧按 basename 收集时误把草稿当最终产物。
@@ -126,6 +129,7 @@ Frontend -> Your Backend -> LlmGateway / InfiniSynapse Server API
 - 自有产品保留用户、权限、计费、确定性业务状态、低延迟结构化 LLM 和已有带权限的 RAG。
 - 先接一个低风险闭环：API route 创建自有任务并入队，worker 先 SSE 后 `newTask`，完成后同步 workspace artifact。
 - `newTask` 是外部副作用；预生成 `taskId`/`connId`，用输入 hash 去重，worker 恢复时先查消息和 workspace，不要盲目自动重发。
+- 客户端的 `sourceIds`、database/RAG ID 只是选择提示；后端必须带当前 `workspaceId`/tenant 二次校验归属并保存不可变快照，拒绝跨工作区资源。并行 child task 各自隔离 workspace，且接收完整的已授权上下文。
 - 部署停机不等于用户取消；worker shutdown 应进入 recovering，不能把 provider task 当失败路径自动 cancel。
 - plan/act 审批要有业务状态机；计划完成的 `waiting_user` 仍算活跃任务，approve 前先确认 SSE，切 act 后再发执行 `askResponse`。
 - `mode=plan`、`autoApprovalSettings` 和 prompt 不是运行时 capability firewall；后端仍要按 `planning` / `waiting_user` 的 action allowlist 监测归一化事件，发现未审批的网页、Browser、delegate、文件写入或未知执行动作时，用固定凭据幂等 `cancelTask`、中止 consumer、落库并审计，不得继续等 completion 或自动放行。

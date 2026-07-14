@@ -133,6 +133,9 @@ class ClientConfig:
     account_base_url: Optional[str] = None
     lang: str = "zh_CN"
     timeout: float = 30.0
+    sse_connect_timeout: float = 30.0
+    upload_timeout: float = 120.0
+    download_timeout: float = 300.0
 
 
 class InfiniSynapseClient:
@@ -144,6 +147,9 @@ class InfiniSynapseClient:
         self.account_base_url = (config.account_base_url or REGION_ACCOUNT[config.region]).rstrip("/")
         self.lang = config.lang
         self.timeout = config.timeout
+        self.sse_connect_timeout = config.sse_connect_timeout
+        self.upload_timeout = config.upload_timeout
+        self.download_timeout = config.download_timeout
 
     def _headers(self, extra: dict[str, str] | None = None) -> dict[str, str]:
         h = {"Authorization": f"Bearer {self.api_key}", "x-lang": self.lang}
@@ -199,7 +205,8 @@ class InfiniSynapseClient:
             headers=self._headers({"Accept": "text/event-stream"}),
             method="GET",
         )
-        return urllib.request.urlopen(req, timeout=read_timeout)
+        timeout = self.sse_connect_timeout if read_timeout is None else read_timeout
+        return urllib.request.urlopen(req, timeout=timeout)
 
     def iter_events(self, resp):
         """把已建立的 SSE 响应逐个解析成事件。"""
@@ -208,9 +215,9 @@ class InfiniSynapseClient:
             for ev in parser.push(raw.decode(errors="replace")):
                 yield ev
 
-    def open_events(self, conn_id: str):
+    def open_events(self, conn_id: str, read_timeout: float | None = None):
         """便捷：建立连接（**调用即 urlopen，非惰性**）并返回事件迭代器。"""
-        return self.iter_events(self.open_events_response(conn_id))
+        return self.iter_events(self.open_events_response(conn_id, read_timeout=read_timeout))
 
     def send_message(self, body: dict) -> Any:
         return self._request("POST", "/api/ai/message", body=body)
@@ -262,7 +269,7 @@ class InfiniSynapseClient:
             headers=self._headers(), method="GET",
         )
         try:
-            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+            with urllib.request.urlopen(req, timeout=self.download_timeout) as resp:
                 return resp.read()
         except urllib.error.HTTPError as e:
             raise InfiniSynapseError(f"download failed HTTP {e.code}", http_status=e.code)
@@ -281,7 +288,7 @@ class InfiniSynapseClient:
         headers = self._headers({"Content-Type": f"multipart/form-data; boundary={boundary}"})
         req = urllib.request.Request(self._url(path, query), data=body, headers=headers, method="POST")
         try:
-            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+            with urllib.request.urlopen(req, timeout=self.upload_timeout) as resp:
                 raw = resp.read().decode()
                 status = resp.status
         except urllib.error.HTTPError as e:
@@ -331,6 +338,15 @@ def is_completion(message: dict) -> bool:
     return message.get("say") == "completion_result" or message.get("ask") == "completion_result"
 
 
+def event_belongs_to_task(event: dict, task_id: str) -> bool:
+    """用户级 SSE 广播中，带 taskId 的事件必须归属当前任务；旧事件无 taskId 时兼容放行。"""
+    data = event.get("data")
+    if not isinstance(data, dict):
+        return True
+    raw = data.get("taskId")
+    return raw is None or str(raw) == task_id
+
+
 def next_backoff_seconds(attempt: int, base: float = 0.5, max_delay: float = 10.0) -> float:
     """指数退避（封顶），确定性，便于测试。"""
     if attempt <= 0:
@@ -357,11 +373,13 @@ def run_task(client: InfiniSynapseClient, text: str, *, task_id: str | None = No
              max_seconds: float = 600.0, read_timeout: float = 5.0,
              reconnect: bool = True, max_retries: int = 5,
              base_delay: float = 0.5, max_delay: float = 10.0,
-             heartbeat_timeout: float = 30.0) -> RunTaskResult:
+             heartbeat_timeout: float = 30.0,
+             cancel_on_exit: bool = True) -> RunTaskResult:
     """同步驱动一个完整长任务，内置 SSE 重连（退避 + 心跳 + getUiMessageById 断点续传）。
 
     严格"先连 SSE 再发 newTask"。reconnect=False 时流断开即判错。
     on_upload_request(message) -> (data, filename) | None 用于应答 upload_file_to_sandbox。
+    未完成且已发出 newTask 时默认 best-effort cancel_task；优雅停机/恢复交接传 cancel_on_exit=False。
     """
     conn_id = str(uuid.uuid4())
     task_id = task_id or str(uuid.uuid4())
@@ -415,9 +433,11 @@ def run_task(client: InfiniSynapseClient, text: str, *, task_id: str | None = No
                         continue
                     if not raw:
                         break  # 流结束
-                    last_event = time.monotonic()
-                    state["attempt"] = 0  # 有事件 → 清零失败计数
                     for ev in parser.push(raw.decode(errors="replace")):
+                        if not event_belongs_to_task(ev, task_id):
+                            continue
+                        last_event = time.monotonic()
+                        state["attempt"] = 0  # 当前任务有事件 → 清零失败计数
                         name, data = ev.get("event"), ev.get("data")
                         if name == "notification" and isinstance(data, dict) and data.get("type") == "error":
                             result.status = "error"
@@ -463,6 +483,12 @@ def run_task(client: InfiniSynapseClient, text: str, *, task_id: str | None = No
         if not state["done"] and result.status == "completed":
             result.status = "error"
             result.error = result.error or f"timed out after {max_seconds}s"
+
+    if result.status != "completed" and state["task_sent"] and cancel_on_exit:
+        try:
+            client.cancel_task(task_id)
+        except Exception:
+            pass
 
     result.final_text = acc.text()
     if result.status == "completed":
