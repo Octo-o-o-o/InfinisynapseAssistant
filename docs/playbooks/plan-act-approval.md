@@ -26,6 +26,8 @@ Browser Use 的自动审批只适合用户已明确指定的只读 URL/域名。
 
 > 实测注意：`newTask.chatSettings.mode="plan"` 和随 `newTask` 携带的 `autoApprovalSettings` 在部分环境里不一定反映到可见运行状态。更稳的做法是先单独发送 `type=autoApprovalSettings`，计划 prompt 中明确"若系统要求工具，唯一允许 `plan_mode_response` 提交计划，且必须填写非空 `response`"，并把非空 `message.ask==="plan_mode_response"` 或符合固定结构的计划正文视为"等待人工审批"信号。不要把 prompt 回显、空 `response` 或工具重试片段当作计划完成。
 
+> 成对恢复经验：为 plan task 显式下发的 `autoApprovalSettings` 不能假设会随 `togglePlanActMode(mode="act")` 自动复位。真实消费项目中，mode 已切到 ACT 但 web/native tool 仍保持禁用，任务只能用预注入数据生成降级报告。approve 路径应在 SSE 已连接后，针对当前 `taskId/connId` 显式恢复经审批的 ACT 能力，再切 mode、发送执行 prompt；`approve_with_edits` 应先在受限 plan 环境发送编辑指令，随后才恢复能力。该成对恢复不能受默认关闭的旧兼容 flag 控制；恢复失败要在 act prompt 前 fail closed。回归既要核对 settings 出站台账，也要确认 Agent 实际能调用获批工具。
+
 > 严格 schema 产物经验：执行 prompt 若要求 Agent 写 JSON，并且下游会做 schema 校验，必须列出逐字字段名和禁止别名。真实消费项目里，模型容易把 `id/label/score0To5/status/reason/title/probability/mitigation` 写成 `name/score/passed/detail/description` 等自然字段；后端应继续严格校验，prompt 负责减少重试。
 
 > approve 后执行 prompt 经验：产品侧已经完成人工审批并切到 act 后，执行 prompt 要明确"不要再调用 `plan` / `switch_mode` / `plan_mode_response` / `update_plan` 或模式切换工具，直接执行已批准计划"。真实 smoke 中，若 act prompt 被上游当作新请求，Agent 可能先尝试内部计划工具；参数不完整时会进入工具重试循环并触发 `notification.type=error`。
@@ -89,6 +91,7 @@ Browser Use 的自动审批只适合用户已明确指定的只读 URL/域名。
 - 只看文案或 prompt，没看实际出站 payload，导致计划任务的 SDK 默认值、runner 默认值或测试 fixture 被改成 `act` 后仍通过 review。
 - approve 后没有重新建立/确认 SSE，导致 act 阶段实际运行但业务后端收不到产物完成事件。
 - approve 后直接 `askResponse` 执行 prompt，但没有先发送 `togglePlanActMode` 或等价的 `chatSettings.mode="act"`，导致上游仍按计划阶段处理。
+- plan 时显式关闭了 web/browser/native tool，却假设切换到 ACT 会自动恢复；最终状态虽为 running，Agent 实际没有获批工具，只能静默生成降级产物。
 - approve 后的执行 prompt 没有禁止 `plan` / `switch_mode` / `plan_mode_response` 等模式工具，导致 Agent 回到计划工具循环而不是直接执行已批准计划。
 - `waiting_user` 不计入活跃任务，导致同一用户在计划待审期间继续创建多个高成本任务。
 - 队列复用同一个已完成 job，approve 后没有真正启动 act worker。
@@ -104,6 +107,7 @@ Browser Use 的自动审批只适合用户已明确指定的只读 URL/域名。
 - 是否有测试或日志证据证明计划入口的实际 payload 是 `chatSettings.mode="plan"`？
 - 是否把 `plan_mode_response` 和 success notification 纳入状态机？
 - approve 后是否在 `togglePlanActMode`/`askResponse` 前确认 SSE 已连接？
+- plan 的限制是否在真实 approve 后针对当前 task 成对恢复，并用实际工具事件而不只是 settings 响应证明生效？
 - approve 路径是否先切到 `act` 再发送执行 prompt，且追加指令/拒绝/取消不会误切 `act`？
 - review 是否覆盖 client、runner、mock/fake、fixture 和默认参数，而不只覆盖 UI 按钮或 prompt 文案？
 - `waiting_user` 是否参与并发限制、取消、超时、恢复和用量展示？
