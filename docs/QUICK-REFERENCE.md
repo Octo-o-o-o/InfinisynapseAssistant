@@ -66,7 +66,7 @@ x-lang: zh_CN
 ## 成熟产品守卫
 
 - prompt 中的"最多搜索 N 次 / 最多 N 个来源 / 控制 N 分钟"只是软目标，不是硬预算 API。
-- 后端需要实现总耗时、SSE idle、可识别工具事件、child task、repair 轮数等 runtime guard。
+- 后端需要实现总耗时、SSE idle、可识别工具事件、child task、repair 轮数等 runtime guard；总耗时和终态对账使用独立时钟，不能因 heartbeat/keepalive 持续重置 idle 而永久跳过。
 - 长任务入口入队前先做 feature flag、rate limit、active task 并发限制；上线前单独跑 production preflight，检查 InfiniSynapse、队列/worker 和对象存储探针。
 - worker 重启、SSE idle 或业务总超时后先按需 `cancelTask`，再用 `getTaskWorkspace` 抢救已有产物；产物完整时进入 `validating` / `needs_review`，不要直接丢弃。用户主动取消通常表示放弃交付，默认不做面向用户的 salvage。
 - `WAITING_APPROVAL` / `waiting_user` 要算活跃任务并设置 TTL；超时后条件认领、按需取消 provider、尝试 salvage、释放并发占位并幂等补偿。
