@@ -18,6 +18,12 @@ export interface ClientConfig {
   lang?: "zh_CN" | "en" | "ar" | "ja" | "ko" | "ru";
   /** 单次请求超时（毫秒），默认 30000。SSE 不受此限制。 */
   timeoutMs?: number;
+  /** SSE 响应头建立前的握手超时（毫秒），默认 30000；连接建立后事件流不受此限制。 */
+  sseConnectTimeoutMs?: number;
+  /** multipart 上传超时（毫秒），默认 120000。 */
+  uploadTimeoutMs?: number;
+  /** 二进制下载超时（毫秒），默认 300000。 */
+  downloadTimeoutMs?: number;
   /** 注入自定义 fetch（测试或代理用）。默认全局 fetch（Node 18+ / 浏览器）。 */
   fetch?: typeof fetch;
 }

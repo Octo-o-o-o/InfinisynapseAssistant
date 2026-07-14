@@ -71,7 +71,7 @@ if command -v node >/dev/null 2>&1; then
   NODE_MAJOR="$(node -p 'process.versions.node.split(".").map(Number)[0]')"
   NODE_MINOR="$(node -p 'process.versions.node.split(".").map(Number)[1]')"
   if [ "$NODE_MAJOR" -gt 22 ] || { [ "$NODE_MAJOR" -eq 22 ] && [ "$NODE_MINOR" -ge 6 ]; }; then
-    if ( cd samples/sdk/typescript && node --experimental-strip-types --test test/*.test.ts ) >/tmp/inf-ts-test.out 2>&1; then
+    if ( cd samples/sdk/typescript && node --experimental-strip-types --test --test-concurrency=1 test/*.test.ts ) >/tmp/inf-ts-test.out 2>&1; then
       ok "TS SDK 离线 SSE 单测"
     else
       bad "TS SDK 离线 SSE 单测 (见 /tmp/inf-ts-test.out)"

@@ -32,6 +32,14 @@ Browser Use 的自动审批只适合用户已明确指定的只读 URL/域名。
 
 > 回归 review 经验：不要只检查 prompt 是否写了"先计划"。代码 review 和 smoke 必须同时检查出站 payload 与默认值：计划入口实际发送 `chatSettings.mode="plan"`；通用 client/runner 默认值没有悄悄改成 `act`；approve 路径在 `askResponse` 前发送 `togglePlanActMode` 切到 `act`；追加指令、拒绝、取消等非 approve 路径不会切到 `act`。如果 diff 改到 `chatSettings`、`mode`、`togglePlanActMode`、自动审批或 plan/act 测试 fixture，要按高风险变更审。
 
+## 运行时硬边界（必须由业务后端执行）
+
+`chatSettings.mode`、`autoApprovalSettings` 和 prompt 是纵深防御，不是 capability firewall。上游在部分环境可能继续推进模式或发出计划外动作，因此产品后端必须把当前业务状态和允许动作集合实现为硬状态机：
+
+- `planning` / `waiting_user` 只允许计划正文、计划询问、状态/心跳和产品明确列入 allowlist 的元数据事件；`web_search`、`web_fetch`、Browser、`delegate`、文件写入、native/shell 或其它执行型动作默认禁止。动作名不完整或无法归类时 fail-closed，不要靠 prompt 猜测它是否安全。
+- 事件归一化层要保留足够的 task/action 元数据，让业务层能识别执行信号，而不是只保存展示文本。检测到未审批执行动作时，先幂等认领当前业务状态，再用该任务已固定的凭据调用 `cancelTask`、中止本地 SSE consumer、落库 `failed` / `needs_review` 和可审计原因；不要继续等待 completion，也不要把它当作用户已批准。
+- 这条 guard 必须覆盖主任务、review 子任务和 child task，并在运行时测试中用真实形状的 `message.add` / `message.partial` action 事件验证：不会产生后续工具或产物写入，且只发送一次取消。
+
 ## 成熟产品状态机
 
 把 plan/act 接入已有产品时，不要只靠内存或前端按钮状态。业务库至少要能区分 `planning`、`waiting_user`、`running`、`completed`、`failed`、`cancelled`，并保存 `plan_requested_at`、`plan_received_at`、`plan_approved_at`、`act_sent_at` 或等价审计字段。

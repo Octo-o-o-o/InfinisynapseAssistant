@@ -65,6 +65,9 @@ export class InfiniSynapseClient {
   private readonly apiKey: string;
   private readonly lang: string;
   private readonly timeoutMs: number;
+  private readonly sseConnectTimeoutMs: number;
+  private readonly uploadTimeoutMs: number;
+  private readonly downloadTimeoutMs: number;
   private readonly fetchImpl: typeof fetch;
 
   constructor(config: ClientConfig) {
@@ -75,6 +78,9 @@ export class InfiniSynapseClient {
     this.accountBaseUrl = (config.accountBaseUrl ?? REGION_ACCOUNT[region]).replace(/\/+$/, "");
     this.lang = config.lang ?? "zh_CN";
     this.timeoutMs = config.timeoutMs ?? 30000;
+    this.sseConnectTimeoutMs = config.sseConnectTimeoutMs ?? 30000;
+    this.uploadTimeoutMs = config.uploadTimeoutMs ?? 120000;
+    this.downloadTimeoutMs = config.downloadTimeoutMs ?? 300000;
     this.fetchImpl = config.fetch ?? globalThis.fetch;
     if (!this.fetchImpl) throw new Error("global fetch not found; pass config.fetch (Node 18+ required)");
   }
@@ -159,12 +165,25 @@ export class InfiniSynapseClient {
    * 注意：必须在 newTask 之前调用。
    */
   async openEvents(connId?: string, signal?: AbortSignal): Promise<ReadableStream<Uint8Array>> {
-    const res = await this.fetchImpl(this.url("/api/ai/events", connId ? { connId } : undefined), {
-      method: "GET",
-      headers: this.authHeaders({ Accept: "text/event-stream" }),
-      signal,
-    });
+    // 只限制响应头建立前的握手；连接建立后不设流总超时，长任务由调用方的
+    // AbortSignal + 心跳看门狗管理。保留父 signal 绑定，让它也能中止已建立的 body 流。
+    const controller = new AbortController();
+    const onAbort = () => controller.abort();
+    if (signal?.aborted) controller.abort();
+    else signal?.addEventListener("abort", onAbort, { once: true });
+    const timer = setTimeout(() => controller.abort(), this.sseConnectTimeoutMs);
+    let res: Response;
+    try {
+      res = await this.fetchImpl(this.url("/api/ai/events", connId ? { connId } : undefined), {
+        method: "GET",
+        headers: this.authHeaders({ Accept: "text/event-stream" }),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timer);
+    }
     if (!res.ok || !res.body) {
+      signal?.removeEventListener("abort", onAbort);
       throw new InfiniSynapseError(`Failed to open SSE (HTTP ${res.status})`, { httpStatus: res.status });
     }
     return res.body;
@@ -288,11 +307,19 @@ export class InfiniSynapseClient {
     const { blob, filename } = toBlobParts(file);
     const form = new FormData();
     form.append("file", blob, filename);
-    const res = await this.fetchImpl(this.url(path, opts.query), {
-      method: "POST",
-      headers: this.authHeaders(), // 不设 Content-Type，让 fetch 自带 boundary
-      body: form,
-    });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), this.uploadTimeoutMs);
+    let res: Response;
+    try {
+      res = await this.fetchImpl(this.url(path, opts.query), {
+        method: "POST",
+        headers: this.authHeaders(), // 不设 Content-Type，让 fetch 自带 boundary
+        body: form,
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timer);
+    }
     const text = await res.text();
     let parsed: unknown = {};
     try {
@@ -343,13 +370,20 @@ export class InfiniSynapseClient {
   }
 
   private async downloadBinary(path: string, query?: Record<string, unknown>): Promise<Uint8Array> {
-    const res = await this.fetchImpl(this.url(path, query), {
-      method: "GET",
-      headers: this.authHeaders(),
-    });
-    if (!res.ok) {
-      throw new InfiniSynapseError(`Download failed HTTP ${res.status} from ${path}`, { httpStatus: res.status });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), this.downloadTimeoutMs);
+    try {
+      const res = await this.fetchImpl(this.url(path, query), {
+        method: "GET",
+        headers: this.authHeaders(),
+        signal: controller.signal,
+      });
+      if (!res.ok) {
+        throw new InfiniSynapseError(`Download failed HTTP ${res.status} from ${path}`, { httpStatus: res.status });
+      }
+      return new Uint8Array(await res.arrayBuffer());
+    } finally {
+      clearTimeout(timer);
     }
-    return new Uint8Array(await res.arrayBuffer());
   }
 }

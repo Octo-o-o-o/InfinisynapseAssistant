@@ -113,6 +113,7 @@ Frontend -> Your Backend -> LlmGateway / InfiniSynapse Server API
 - 开源采用、供应商安全、依赖健康等确定性信号优先由业务后端 connector 抓取并保存不可变 raw snapshot（source URL、fetchedAt、raw JSON、hash），再把摘要喂给 InfiniSynapse task 解释；Agent 产物收集后由后端二次校验/补充 metric evidence。connector token 只能在服务端 env/KMS；deps.dev、OSV、GitHub 等源失败时产 `connectorWarning`/`evidenceGap`，不要把失败或缺口伪装成高质量 evidence。connector 内部按逐个包/子请求降级（单点失败不拖垮整源、只缓存完全成功结果），并区分正常缺口与真失败——有任一成功快照即算 success、缺口只写 warning，warning/部分快照的证据要按比例降质。
 - 标准/深度报告可让 Agent 先在 `working/` 分阶段整理 source discovery、evidence extraction、comparison、risk review，再在 `final/` 重新 synthesis；最终报告不能机械拼接，要去重、回应冲突证据并统一评分口径。
 - 多 agent / 多 task 对抗流程不是 InfiniSynapse 原生 parent-child 能力。业务后端必须自己保存 parent run、child `taskId`/`connId`、输入、workspace snapshot、预算和恢复状态；repair loop 必须有硬上限。
+- 启动 review/child task 时不要假设它继承父任务上下文；prompt 必须带 canonical target（名称、类型、主 URL/资源标识）和本次 review 的问题/claim，并在合并前校验 child 产物仍指向该 target，避免把方法论、指标名或 connector 名误当成被评估对象。
 - 长期 RAG 只保存用户或 Reviewer 确认过的报告、评分卡或证据摘要；失败任务、草稿和未审结论不要自动 `saveToRag`。
 - 决策型产品不要止步于一次性报告；完成后应把 scorecard version、Outcome 回访、Watchlist delta 和离线 benchmark 作为业务后端治理层设计，详见 `docs/playbooks/decision-quality-loop.md`。
 - 对外分享默认发布脱敏 export；不要把含闭源材料、客户数据或上传文件的原始 task 直接 `setShare`。
@@ -127,6 +128,7 @@ Frontend -> Your Backend -> LlmGateway / InfiniSynapse Server API
 - `newTask` 是外部副作用；预生成 `taskId`/`connId`，用输入 hash 去重，worker 恢复时先查消息和 workspace，不要盲目自动重发。
 - 部署停机不等于用户取消；worker shutdown 应进入 recovering，不能把 provider task 当失败路径自动 cancel。
 - plan/act 审批要有业务状态机；计划完成的 `waiting_user` 仍算活跃任务，approve 前先确认 SSE，切 act 后再发执行 `askResponse`。
+- `mode=plan`、`autoApprovalSettings` 和 prompt 不是运行时 capability firewall；后端仍要按 `planning` / `waiting_user` 的 action allowlist 监测归一化事件，发现未审批的网页、Browser、delegate、文件写入或未知执行动作时，用固定凭据幂等 `cancelTask`、中止 consumer、落库并审计，不得继续等 completion 或自动放行。
 - 不是所有任务都需要 plan 审批：按次付费/全自动任务可按 kind 声明 direct-act（`newTask` 直接 `chatSettings:{mode:"act"}` + autoApprovalSettings 全开），跳过 `WAITING_APPROVAL` 状态位；质量兜底交给完成后的 required artifacts schema 校验（缺核心产物即业务失败并触发退款/补偿）。注意 direct-act 任务在恢复路径（recovery/`waitingForApproval` 判定）也要豁免审批停靠，否则重启后会卡死在不存在的审批位。
 - `waiting_user` / `WAITING_APPROVAL` 要有 TTL；超时后条件认领，按需 `cancelTask`，再尝试 workspace salvage，最后释放并发占位并做幂等退款/用量补偿。不要让待审批任务永久占用用户额度或 active slot。
 - 产品历史、下载和合规审计不要只依赖 provider workspace；完成后把最终 PDF/DOCX/ZIP/JSON/Markdown 等产物复制到自有 artifact store，并保留 provider path、storage key、checksum 和可选 manifest 作为来源索引（见 `docs/playbooks/artifact-archiving.md`）。

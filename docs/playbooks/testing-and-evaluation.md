@@ -32,6 +32,9 @@
 - [ ] `notification.type==='error'` / `api_req_failed` → 业务失败落库（mock `[mock:error]` 场景）
 - [ ] `upload_file_to_sandbox` → 上传 → `askResponse` 链路（mock `[mock:upload]` 场景）
 - [ ] 断线重连 + `getUiMessageById` 补消息（reconnect 单测 + fake client）
+- [ ] 空 `completion_result` / `notification.success` 只作为终态标记时，能从 UI message/workspace 恢复非空结果并拒绝空产物
+- [ ] `after_sequence` 增量读取、游标推进、事件去重和有界初始快照；不会在每条事件上从 `0` 重放全量历史
+- [ ] `planning` / `waiting_user` 收到执行型 action 事件时 fail-closed：同一 task 只调用一次 `cancelTask`，不写入执行产物，也不自动进入审批/完成
 - [ ] 下载端点按二进制流处理，不按 JSON 信封解析（集成测试 + `INF-DL-001`）
 - [ ] Key 失效（1101/1105）走可解释错误分支（mock 缺 token 用例）
 - [ ] 取消后业务状态一致（cancel 单测）

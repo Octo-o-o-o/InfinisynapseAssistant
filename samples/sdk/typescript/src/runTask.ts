@@ -32,6 +32,11 @@ export interface RunTaskOptions {
   onUploadRequest?: (message: AgentMessage) => Promise<UploadFile | null> | UploadFile | null;
   /** 外部取消。 */
   signal?: AbortSignal;
+  /**
+   * 未完成且已发出 newTask 时，退出消费循环后是否 best-effort 取消平台任务；默认 true。
+   * 优雅停机/恢复交接时传 false，让后续 worker 接管同一个 taskId。
+   */
+  cancelOnExit?: boolean;
 }
 
 export interface RunTaskResult {
@@ -61,6 +66,14 @@ function isCompletion(m: AgentMessage): boolean {
 }
 function isUploadAsk(m: AgentMessage): boolean {
   return m.type === "ask" && m.ask === "upload_file_to_sandbox";
+}
+
+/** SSE 连接可能是用户级广播；带 taskId 的事件必须归属当前任务。旧事件无 taskId 时兼容放行。 */
+function belongsToTask(ev: SseEvent, taskId: string): boolean {
+  if (!ev.data || typeof ev.data !== "object") return true;
+  const raw = (ev.data as { taskId?: unknown }).taskId;
+  if (raw === undefined || raw === null) return true;
+  return String(raw) === taskId;
 }
 
 function sleep(ms: number, signal?: AbortSignal): Promise<void> {
@@ -125,6 +138,7 @@ export async function runTask(client: InfiniSynapseClient, opts: RunTaskOptions)
 
   const handleEvent = (ev: SseEvent): boolean => {
     attempt = 0; // 有任何事件就说明连接是活的
+    if (!belongsToTask(ev, taskId)) return false;
     opts.onEvent?.(ev);
     if (ev.event === "notification") {
       const n = ev.data as NotificationData;
@@ -216,6 +230,16 @@ export async function runTask(client: InfiniSynapseClient, opts: RunTaskOptions)
       }
     } catch {
       // best effort，拉不到就靠下一次重连继续
+    }
+  }
+
+  // 未完成即离场（超时/主动 abort/SSE 重连耗尽等）时，平台任务可能仍在运行并继续消耗额度。
+  // cancelTask 是幂等止血；优雅停机/恢复交接由 cancelOnExit=false 明确 opt out。
+  if (status !== "completed" && taskSent && opts.cancelOnExit !== false) {
+    try {
+      await client.cancelTask(taskId);
+    } catch {
+      /* best effort：保留本地失败态，后续恢复流程继续处理 */
     }
   }
 
