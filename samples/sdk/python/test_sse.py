@@ -1,11 +1,12 @@
 """离线 SSE 解析器单测，不触网。运行：python3 -m unittest test_sse.py"""
+import json
 import unittest
 from unittest.mock import patch
 
 from infinisynapse_client import (
     ClientConfig, InfiniSynapseClient, InfiniSynapseError,
     SseParser, parse_sse_data, is_completion, TextAccumulator,
-    next_backoff_seconds, select_missed_messages,
+    next_backoff_seconds, select_missed_messages, run_task,
 )
 
 
@@ -169,6 +170,83 @@ class TestClientCancel(unittest.TestCase):
 
         self.assertEqual(ctx.exception.code, 500)
         self.assertEqual(str(ctx.exception), "upload denied")
+
+
+class _FakeResponse:
+    def __init__(self, chunks):
+        self.chunks = list(chunks)
+
+    def readline(self):
+        return self.chunks.pop(0) if self.chunks else b""
+
+    def close(self):
+        pass
+
+
+class _FakeTaskClient:
+    def __init__(self, chunks):
+        self.chunks = chunks
+        self.open_count = 0
+        self.calls = []
+
+    def open_events_response(self, _conn_id, read_timeout=None):
+        self.open_count += 1
+        return _FakeResponse(self.chunks)
+
+    def new_task(self, _text, *, conn_id, task_id):
+        self.calls.append(("new_task", task_id))
+        return {"success": True}
+
+    def cancel_task(self, task_id):
+        self.calls.append(("cancel_task", task_id))
+        return {"success": True}
+
+    def get_ui_message_by_id(self, _task_id):
+        return {"messages": []}
+
+    def get_task_workspace(self, _task_id):
+        return {"cwd": "/w", "files": []}
+
+
+def _sse(event, data):
+    return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n".encode()
+
+
+class TestRunTask(unittest.TestCase):
+    def test_filters_other_task_events(self):
+        client = _FakeTaskClient([
+            _sse("message.add", {"taskId": "task-other", "message": {"ts": 1, "say": "completion_result", "text": "错误任务"}}),
+            _sse("message.add", {"taskId": "task-good", "message": {"ts": 2, "text": "正确任务"}}),
+            _sse("message.add", {"taskId": "task-good", "message": {"ts": 3, "say": "completion_result"}}),
+        ])
+
+        result = run_task(client, "hi", task_id="task-good", reconnect=False, read_timeout=0.01)
+
+        self.assertEqual(result.status, "completed")
+        self.assertEqual(result.final_text, "正确任务")
+        self.assertEqual(client.calls, [("new_task", "task-good")])
+
+    def test_cancels_unfinished_task_on_exit(self):
+        client = _FakeTaskClient([
+            _sse("message.add", {"taskId": "task-abort", "message": {"ts": 1, "text": "未完成"}}),
+        ])
+
+        result = run_task(client, "long", task_id="task-abort", reconnect=False, read_timeout=0.01)
+
+        self.assertEqual(result.status, "error")
+        self.assertEqual(client.calls, [("new_task", "task-abort"), ("cancel_task", "task-abort")])
+
+    def test_cancel_on_exit_false_keeps_task_for_handoff(self):
+        client = _FakeTaskClient([
+            _sse("message.add", {"taskId": "task-handoff", "message": {"ts": 1, "text": "未完成"}}),
+        ])
+
+        result = run_task(
+            client, "handoff", task_id="task-handoff", reconnect=False, read_timeout=0.01, cancel_on_exit=False,
+        )
+
+        self.assertEqual(result.status, "error")
+        self.assertEqual(client.calls, [("new_task", "task-handoff")])
 
 
 if __name__ == "__main__":

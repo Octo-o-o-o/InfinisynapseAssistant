@@ -43,6 +43,8 @@ for (const f of result.workspace?.files ?? []) {
 
 `runTask` 自动处理：生成 `connId`/`taskId`、先连 SSE 再发 `newTask`、按 `ts` 累积文本（避免快照重复拼接）、`upload_file_to_sandbox` 回调（按 ts 去重）、`completion_result` 完成判定、`notification.type=error` 失败、完成后读 `getTaskWorkspace`。
 
+SDK 会过滤带有其他 `taskId` 的用户级 SSE 广播；旧事件缺少 `taskId` 时为兼容而放行。普通请求、SSE 建连、multipart 上传和二进制下载分别使用 `timeoutMs`（30s）、`sseConnectTimeoutMs`（30s）、`uploadTimeoutMs`（120s）和 `downloadTimeoutMs`（300s），SSE 建连成功后的流不设总超时。任务未完成即因外部 abort/超时/重连耗尽退出时，`runTask` 默认 best-effort 调用 `cancelTask`；恢复交接或优雅停机请传 `cancelOnExit:false`。
+
 ### SSE 重连（默认开启）
 
 长任务连接可能中途断开。`runTask` 内置重连：

@@ -86,6 +86,23 @@ test("SSE 建连超时可配置，且连接建立后不依赖普通 request time
   assert.equal(state.aborted, true);
 });
 
+test("SSE 建连尊重调用前已触发的 AbortSignal", async () => {
+  const abort = new AbortController();
+  abort.abort();
+  let receivedSignal: AbortSignal | undefined;
+  const client = new InfiniSynapseClient({
+    apiKey: "server-only-test-key",
+    baseUrl: "https://example.invalid",
+    fetch: async (_url, init) => {
+      receivedSignal = init?.signal;
+      throw new Error("pre-aborted");
+    },
+  });
+
+  await assert.rejects(() => client.openEvents("conn-1", abort.signal), /pre-aborted/);
+  assert.equal(receivedSignal?.aborted, true);
+});
+
 test("multipart 上传有独立超时", async () => {
   const state = { aborted: false };
   const client = new InfiniSynapseClient({

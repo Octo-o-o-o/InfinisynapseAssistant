@@ -35,6 +35,17 @@
 
 如果这是面向用户的正式产品能力，完成后还应把最终交付物复制到自有对象存储或文件服务。InfiniSynapse workspace path 适合作为来源索引；业务下载、权限校验、留存策略和删除策略应优先走自有 artifact 记录。PDF/DOCX/ZIP/图片等下载结果是二进制流，归档和转发时不要按 JSON 信封解析。完整归档策略见 [artifact-archiving.md](artifact-archiving.md)。
 
+### 多文件任务的上下文与授权边界
+
+多文件输入不能只解决“能否上传”，还要同时解决来源授权、上下文确定性和结果 provenance：
+
+1. 前端传来的 `sourceIds`、`databaseIds` 或 RAG 资源 ID 只是选择提示，不是授权凭据。后端必须按当前 `workspaceId`/tenant 和 ID 集合重新查询并校验归属；发现任一 ID 不属于当前工作区就拒绝，不能静默降级到无作用域查询或整个工作区。
+2. 通过校验的来源先生成不可变选择快照，再按稳定 ID/显示名排序。文件名要做安全清洗；同名文件追加短 ID 后缀，并保存“业务来源 ID ↔ 平台返回的 `logicalPath`/`filename`”映射，prompt 和结果引用只使用平台实际路径。
+3. 上传前做文件数量、单文件大小和总字节数 preflight；多个文件默认顺序上传并及时释放中间 buffer，避免并发上传造成内存峰值或部分映射未落库。并行 child task 必须各自拥有独立 workspace，并接收完整的已授权上下文，不能只把文件发给其中一个 child。
+4. prompt 应列出本次文件清单及每个文件的角色、期间、指标/口径；要求最终结果携带文件名或路径 provenance。不要暗示“所有文件都同等代表真相”，应明确主来源、辅助来源和冲突处理规则。
+
+这套规则同样适用于数据库/RAG 资源：资源启用状态、查询范围和任务 prompt 必须绑定同一份选择快照，并在 `newTask` 前完成。
+
 ### 长期知识库问答
 
 1. 确认文件位置能被 InfiniSynapse 服务端访问。
@@ -57,6 +68,9 @@
 - 上传了输入资料，但任务完成后只读最后一条 SSE 文本，不检查 workspace 产物。
 - 只保存 InfiniSynapse workspace path，不归档关键交付物，导致业务历史下载依赖执行侧 workspace 的长期可用性。
 - 创建任务后才临时启用 RAG 或数据源，导致 Agent 本轮任务不可见。
+- 直接信任客户端 `sourceIds`，或只按 ID 查询而不带 `workspaceId`/tenant 过滤。
+- 多个来源使用不稳定的原始文件名，导致同名覆盖、prompt 引用与实际上传路径不一致。
+- 并行 child task 复用同一个 workspace，或只给部分 child 上传上下文。
 
 ## 检查清单
 
@@ -65,5 +79,8 @@
 - 如果是 SaaS，是否避免了本机路径？
 - 上传接口是主动归档到 workspace，还是响应 Agent 的 sandbox 请求？
 - RAG 或数据源是否在 `newTask` 前已经启用？
+- 所有 `sourceIds`/database/RAG ID 是否已按业务工作区二次授权，并保存选择快照？
+- 是否有确定性文件名、平台路径映射、数量/单文件/总大小 preflight 和 provenance？
+- 并行 child 是否各自隔离 workspace，并收到完整上下文？
 - 任务完成后是否读取了 workspace 产物？
 - 正式产品的关键产物是否已归档到自有 artifact store，并保留 provider path？
